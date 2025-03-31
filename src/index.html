@@ -1,12 +1,102 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Hello World!</title>
-    <link rel="stylesheet" href="index.css" />
-  </head>
-  <body>
-    <h1>💖 Hello World!</h1>
-    <p>Welcome to your Electron application.</p>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lofty</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Custom window drag area -->
+    <div class="drag-region"></div>
+    
+    <div class="sidebar">
+      <div class="logo">ChatGPT</div>
+      <div class="new-chat-button">
+        <button id="new-chat-btn">+ New Chat</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-title">Today</div>
+        <div class="chat-history" id="today-chats">
+          <div class="sidebar-item active" data-chat-id="chat-1">Create electron app error</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-title">Yesterday</div>
+        <div class="chat-history" id="yesterday-chats">
+          <div class="sidebar-item" data-chat-id="chat-2">Recent News Date</div>
+          <div class="sidebar-item" data-chat-id="chat-3">Software Ideas for Income</div>
+          <div class="sidebar-item" data-chat-id="chat-4">Remove Object by String</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-title">3 days ago</div>
+        <div class="chat-history" id="older-chats">
+          <div class="sidebar-item" data-chat-id="chat-5">Crafting Cover Letter</div>
+          <div class="sidebar-item" data-chat-id="chat-6">Injecting Errors into XML</div>
+        </div>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar">JS</div>
+        <div class="user-name">Joey Salinas</div>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div class="window-header">
+        <div class="window-title">
+          <span class="current-chat-title">Create electron app error</span>
+        </div>
+        <div class="window-controls">
+          <button class="control-button" id="minimize-btn">—</button>
+          <button class="control-button" id="maximize-btn">□</button>
+          <button class="control-button" id="close-btn">✕</button>
+        </div>
+      </div>
+      
+      <div class="mode-selector-container">
+        <div class="mode-selector">
+          <select id="mode-dropdown">
+            <option value="reasoning">Reasoning</option>
+            <option value="math">Math</option>
+            <option value="programming">Programming</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="chat-container" id="chat-messages">
+        <div class="message user-message">
+          <div class="message-content">
+            Installing it globally for npm did not work, but using npx did. Thank you!
+          </div>
+        </div>
+        <div class="message bot-message">
+          <div class="message-content">
+            You're welcome! 🎉 npx is a lifesaver for running packages without global installs. Let me know if you need any help setting up your Electron app. Happy coding! 🚀🔧
+          </div>
+          <div class="message-actions">
+            <button class="action-button">📋</button>
+            <button class="action-button">🔊</button>
+            <button class="action-button">👍</button>
+            <button class="action-button">👎</button>
+            <button class="action-button">↻</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="input-area">
+        <div class="message-input">
+          <button class="input-button">+</button>
+          <button class="input-button">🌐</button>
+          <button class="input-button">↻</button>
+          <input type="text" id="message-input-field" placeholder="Message ChatGPT">
+          <button class="input-button microphone">🎤</button>
+          <button class="input-button send" id="send-message-btn">▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
 </html>
