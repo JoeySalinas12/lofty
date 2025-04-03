@@ -6,5 +6,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   changeMode: (mode) => ipcRenderer.send('mode-changed', mode),
   
   // Load a specific chat history
-  loadChat: (chatId) => ipcRenderer.send('load-chat', chatId)
+  loadChat: (chatId) => ipcRenderer.send('load-chat', chatId),
+  
+  // Delete a chat
+  deleteChat: (chatId) => ipcRenderer.send('delete-chat', chatId),
+  
+  // Window control functions
+  minimizeWindow: () => ipcRenderer.send('window-minimize'),
+  maximizeWindow: () => ipcRenderer.send('window-maximize'),
+  closeWindow: () => ipcRenderer.send('window-close')
 });

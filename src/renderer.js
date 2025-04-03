@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   
     let currentChatId = 'chat-1';
+    let contextMenuTargetId = null;
   
     // Get UI elements
     const modeDropdown = document.getElementById('mode-dropdown');
@@ -46,11 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendButton = document.getElementById('send-message-btn');
     const newChatButton = document.getElementById('new-chat-btn');
     const currentChatTitle = document.querySelector('.current-chat-title');
-    
-    // Window control buttons
-    const minimizeBtn = document.getElementById('minimize-btn');
-    const maximizeBtn = document.getElementById('maximize-btn');
-    const closeBtn = document.getElementById('close-btn');
+    const contextMenu = document.getElementById('context-menu');
+    const deleteChat = document.getElementById('delete-chat');
     
     // Listen for chat history item clicks
     const chatHistoryItems = document.querySelectorAll('.sidebar-item');
@@ -59,6 +57,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatId = event.currentTarget.dataset.chatId;
         loadChat(chatId);
       });
+      
+      // Add right-click context menu
+      item.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        const chatId = event.currentTarget.dataset.chatId;
+        contextMenuTargetId = chatId;
+        
+        // Position context menu at mouse pointer
+        contextMenu.style.display = 'block';
+        contextMenu.style.top = `${event.pageY}px`;
+        contextMenu.style.left = `${event.pageX}px`;
+      });
+    });
+    
+    // Close context menu when clicking elsewhere
+    document.addEventListener('click', () => {
+      contextMenu.style.display = 'none';
+    });
+    
+    // Delete chat when clicking the delete option
+    deleteChat.addEventListener('click', () => {
+      if (contextMenuTargetId) {
+        // Find section containing this chat
+        const chatItem = document.querySelector(`[data-chat-id="${contextMenuTargetId}"]`);
+        if (chatItem) {
+          chatItem.parentNode.removeChild(chatItem);
+          
+          // Delete from object
+          delete chatHistory[contextMenuTargetId];
+          
+          // If current chat is deleted, load first available chat or create new one
+          if (contextMenuTargetId === currentChatId) {
+            const firstChatId = Object.keys(chatHistory)[0];
+            if (firstChatId) {
+              loadChat(firstChatId);
+            } else {
+              createNewChat();
+            }
+          }
+        }
+        
+        // Hide context menu
+        contextMenu.style.display = 'none';
+      }
     });
     
     // Listen for mode changes
@@ -163,7 +205,21 @@ document.addEventListener('DOMContentLoaded', () => {
       newChatItem.className = 'sidebar-item';
       newChatItem.setAttribute('data-chat-id', newChatId);
       newChatItem.textContent = 'New Chat';
+      
+      // Add click event
       newChatItem.addEventListener('click', () => loadChat(newChatId));
+      
+      // Add right-click event for context menu
+      newChatItem.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        contextMenuTargetId = newChatId;
+        
+        // Position context menu at mouse pointer
+        contextMenu.style.display = 'block';
+        contextMenu.style.top = `${event.pageY}px`;
+        contextMenu.style.left = `${event.pageX}px`;
+      });
+      
       todayChats.appendChild(newChatItem);
       
       // Load the new chat
@@ -179,21 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
       contentDiv.className = 'message-content';
       contentDiv.textContent = content;
       messageDiv.appendChild(contentDiv);
-      
-      if (type === 'bot') {
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'message-actions';
-        
-        const actions = ['📋', '🔊', '👍', '👎', '↻'];
-        actions.forEach(action => {
-          const button = document.createElement('button');
-          button.className = 'action-button';
-          button.textContent = action;
-          actionsDiv.appendChild(button);
-        });
-        
-        messageDiv.appendChild(actionsDiv);
-      }
       
       chatMessages.appendChild(messageDiv);
       chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -239,22 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
     }
-    
-    // Window control functions
-    minimizeBtn.addEventListener('click', () => {
-      // Using IPC to communicate with main process would be the real implementation
-      console.log('Minimize window');
-    });
-    
-    maximizeBtn.addEventListener('click', () => {
-      // Using IPC to communicate with main process would be the real implementation
-      console.log('Maximize window');
-    });
-    
-    closeBtn.addEventListener('click', () => {
-      // Using IPC to communicate with main process would be the real implementation
-      console.log('Close window');
-    });
     
     // Initialize with the first chat
     loadChat(currentChatId);

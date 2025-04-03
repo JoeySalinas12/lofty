@@ -30,6 +30,23 @@ const createWindow = () => {
 
   // Open the DevTools in development
   // mainWindow.webContents.openDevTools();
+  
+  // Handle window control events
+  ipcMain.on('window-minimize', () => {
+    mainWindow.minimize();
+  });
+  
+  ipcMain.on('window-maximize', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+  
+  ipcMain.on('window-close', () => {
+    mainWindow.close();
+  });
 };
 
 // Create window when Electron has finished initialization
@@ -60,4 +77,10 @@ ipcMain.on('load-chat', (event, chatId) => {
   console.log(`Loading chat: ${chatId}`);
   // In a real app, you would load the chat data here
   // and send it back to the renderer
+});
+
+// Handle deleting a chat
+ipcMain.on('delete-chat', (event, chatId) => {
+  console.log(`Deleting chat: ${chatId}`);
+  // In a real app, you would delete the chat data from storage here
 });
