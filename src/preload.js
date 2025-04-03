@@ -14,5 +14,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Window control functions
   minimizeWindow: () => ipcRenderer.send('window-minimize'),
   maximizeWindow: () => ipcRenderer.send('window-maximize'),
-  closeWindow: () => ipcRenderer.send('window-close')
+  closeWindow: () => ipcRenderer.send('window-close'),
+  
+  // Query LLM models
+  queryLLM: (model, prompt) => ipcRenderer.invoke('query-llm', model, prompt)
 });

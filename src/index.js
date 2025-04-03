@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const LLMBridge = require('./llm-bridge');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) {
@@ -83,4 +84,16 @@ ipcMain.on('load-chat', (event, chatId) => {
 ipcMain.on('delete-chat', (event, chatId) => {
   console.log(`Deleting chat: ${chatId}`);
   // In a real app, you would delete the chat data from storage here
+});
+
+// Handle LLM queries - this needs to use invoke/handle for async responses
+ipcMain.handle('query-llm', async (event, model, prompt) => {
+  console.log(`Querying ${model} with prompt: ${prompt}`);
+  try {
+    const response = await LLMBridge.queryLLM(model, prompt);
+    return response;
+  } catch (error) {
+    console.error(`Error querying LLM: ${error.message}`);
+    throw error; // This will be caught in the renderer
+  }
 });

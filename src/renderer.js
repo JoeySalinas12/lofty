@@ -1,38 +1,10 @@
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Store chat history
+    // Store chat history - start with just one empty chat
     const chatHistory = {
       'chat-1': {
-        title: 'Create electron app error',
-        mode: 'programming',
-        messages: [
-          { type: 'user', content: 'Installing it globally for npm did not work, but using npx did. Thank you!' },
-          { type: 'bot', content: 'You\'re welcome! 🎉 npx is a lifesaver for running packages without global installs. Let me know if you need any help setting up your Electron app. Happy coding! 🚀🔧' }
-        ]
-      },
-      'chat-2': {
-        title: 'Recent News Date',
+        title: 'New Chat',
         mode: 'reasoning',
-        messages: []
-      },
-      'chat-3': {
-        title: 'Software Ideas for Income',
-        mode: 'reasoning',
-        messages: []
-      },
-      'chat-4': {
-        title: 'Remove Object by String',
-        mode: 'programming',
-        messages: []
-      },
-      'chat-5': {
-        title: 'Crafting Cover Letter',
-        mode: 'reasoning',
-        messages: []
-      },
-      'chat-6': {
-        title: 'Injecting Errors into XML',
-        mode: 'programming',
         messages: []
       }
     };
@@ -50,26 +22,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const contextMenu = document.getElementById('context-menu');
     const deleteChat = document.getElementById('delete-chat');
     
-    // Listen for chat history item clicks
-    const chatHistoryItems = document.querySelectorAll('.sidebar-item');
-    chatHistoryItems.forEach(item => {
-      item.addEventListener('click', (event) => {
-        const chatId = event.currentTarget.dataset.chatId;
-        loadChat(chatId);
-      });
-      
-      // Add right-click context menu
-      item.addEventListener('contextmenu', (event) => {
-        event.preventDefault();
-        const chatId = event.currentTarget.dataset.chatId;
-        contextMenuTargetId = chatId;
+    // Set up event listeners for initial chat item
+    setupChatItemListeners();
+    
+    // Function to set up event listeners for chat history items
+    function setupChatItemListeners() {
+      const chatHistoryItems = document.querySelectorAll('.sidebar-item');
+      chatHistoryItems.forEach(item => {
+        item.addEventListener('click', (event) => {
+          const chatId = event.currentTarget.dataset.chatId;
+          loadChat(chatId);
+        });
         
-        // Position context menu at mouse pointer
-        contextMenu.style.display = 'block';
-        contextMenu.style.top = `${event.pageY}px`;
-        contextMenu.style.left = `${event.pageX}px`;
+        // Add right-click context menu
+        item.addEventListener('contextmenu', (event) => {
+          event.preventDefault();
+          const chatId = event.currentTarget.dataset.chatId;
+          contextMenuTargetId = chatId;
+          
+          // Position context menu at mouse pointer
+          contextMenu.style.display = 'block';
+          contextMenu.style.top = `${event.pageY}px`;
+          contextMenu.style.left = `${event.pageX}px`;
+        });
       });
-    });
+    }
     
     // Close context menu when clicking elsewhere
     document.addEventListener('click', () => {
@@ -156,8 +133,20 @@ document.addEventListener('DOMContentLoaded', () => {
       window.electronAPI.loadChat(chatId);
     }
     
+    // Function to map app modes to LLM models
+    function getModeModel(mode) {
+      // Map the app mode to specific LLM models
+      const modeToModel = {
+        'reasoning': 'claude', // Use Claude for reasoning
+        'math': 'gemini',      // Use Gemini for math
+        'programming': 'gpt'   // Use GPT for programming
+      };
+      
+      return modeToModel[mode] || 'claude'; // Default to Claude if mode not found
+    }
+    
     // Function to send a new message
-    function sendMessage() {
+    async function sendMessage() {
       const messageText = messageInput.value.trim();
       if (messageText === '') return;
       
@@ -170,15 +159,42 @@ document.addEventListener('DOMContentLoaded', () => {
       // Clear the input field
       messageInput.value = '';
       
-      // Simulate the bot response (in a real app, you'd send this to an API)
-      setTimeout(() => {
-        const botResponse = `This is a simulated response to: "${messageText}"`;
+      // Show loading indicator
+      const loadingMessage = document.createElement('div');
+      loadingMessage.className = 'message bot-message loading';
+      loadingMessage.innerHTML = '<div class="message-content">Thinking...</div>';
+      chatMessages.appendChild(loadingMessage);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      try {
+        // Get the appropriate model based on the current mode
+        const currentMode = chatHistory[currentChatId].mode;
+        const modelToUse = getModeModel(currentMode);
+        
+        // Query the LLM through the IPC bridge
+        const botResponse = await window.electronAPI.queryLLM(modelToUse, messageText);
+        
+        // Remove loading indicator
+        chatMessages.removeChild(loadingMessage);
+        
+        // Add the response to the UI
         appendMessage('bot', botResponse);
+        
+        // Add the response to chat history
         chatHistory[currentChatId].messages.push({ type: 'bot', content: botResponse });
         
-        // Scroll to the bottom
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      }, 1000);
+      } catch (error) {
+        // Remove loading indicator
+        chatMessages.removeChild(loadingMessage);
+        
+        // Show error message
+        const errorMessage = `Sorry, there was an error: ${error.message}`;
+        appendMessage('bot', errorMessage);
+        chatHistory[currentChatId].messages.push({ type: 'bot', content: errorMessage });
+      }
+      
+      // Scroll to the bottom
+      chatMessages.scrollTop = chatMessages.scrollHeight;
       
       // Create a new item in the sidebar for this chat if it's the first message
       if (chatHistory[currentChatId].messages.length === 1) {
@@ -206,10 +222,8 @@ document.addEventListener('DOMContentLoaded', () => {
       newChatItem.setAttribute('data-chat-id', newChatId);
       newChatItem.textContent = 'New Chat';
       
-      // Add click event
+      // Add click event and context menu event
       newChatItem.addEventListener('click', () => loadChat(newChatId));
-      
-      // Add right-click event for context menu
       newChatItem.addEventListener('contextmenu', (event) => {
         event.preventDefault();
         contextMenuTargetId = newChatId;
@@ -262,13 +276,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update input placeholder based on mode
       switch (mode) {
         case 'reasoning':
-          messageInput.placeholder = 'Ask a reasoning question...';
+          messageInput.placeholder = 'Ask a reasoning question (Claude)...';
           break;
         case 'math':
-          messageInput.placeholder = 'Ask a math question...';
+          messageInput.placeholder = 'Ask a math question (Gemini)...';
           break;
         case 'programming':
-          messageInput.placeholder = 'Ask a programming question...';
+          messageInput.placeholder = 'Ask a programming question (GPT)...';
           break;
         default:
           messageInput.placeholder = 'Message ChatGPT';
