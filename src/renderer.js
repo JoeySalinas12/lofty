@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentChatTitle = document.querySelector('.current-chat-title');
     const contextMenu = document.getElementById('context-menu');
     const deleteChat = document.getElementById('delete-chat');
+    const renameChat = document.getElementById('rename-chat');
     
     // Set up event listeners for initial chat item
     setupChatItemListeners();
@@ -79,6 +80,65 @@ document.addEventListener('DOMContentLoaded', () => {
         contextMenu.style.display = 'none';
       }
     });
+
+    // Rename chat when clicking the rename option
+    renameChat.addEventListener('click', () => {
+      if (contextMenuTargetId) {
+        showRenameInput(contextMenuTargetId);
+        
+        // Hide context menu
+        contextMenu.style.display = 'none';
+      }
+    });
+    
+    // Function to show an input field for renaming instead of using prompt()
+    function showRenameInput(chatId) {
+      // Find the chat item
+      const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
+      if (!chatItem) return;
+      
+      // Store the current title
+      const currentTitle = chatHistory[chatId].title;
+      
+      // Replace the content with an input field
+      chatItem.innerHTML = '';
+      const inputField = document.createElement('input');
+      inputField.type = 'text';
+      inputField.value = currentTitle;
+      inputField.className = 'rename-input';
+      inputField.style.width = '90%';
+      inputField.style.backgroundColor = '#3a3a3a';
+      inputField.style.color = '#fff';
+      inputField.style.border = 'none';
+      inputField.style.padding = '2px 5px';
+      inputField.style.borderRadius = '2px';
+      
+      chatItem.appendChild(inputField);
+      inputField.focus();
+      inputField.select();
+      
+      // Handle input field events
+      inputField.addEventListener('blur', () => {
+        finishRenaming(chatId, inputField.value);
+      });
+      
+      inputField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          finishRenaming(chatId, inputField.value);
+        }
+      });
+    }
+    
+    // Function to finish the renaming process
+    function finishRenaming(chatId, newTitle) {
+      if (newTitle.trim() !== '') {
+        updateChatTitle(chatId, newTitle.trim());
+      } else {
+        // If empty, revert to previous title
+        const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
+        chatItem.textContent = chatHistory[chatId].title;
+      }
+    }
     
     // Listen for mode changes
     modeDropdown.addEventListener('change', (event) => {
@@ -183,6 +243,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add the response to chat history
         chatHistory[currentChatId].messages.push({ type: 'bot', content: botResponse });
         
+        // Check if this is the first message exchange and update chat title if needed
+        if (chatHistory[currentChatId].messages.length === 2 && 
+            chatHistory[currentChatId].title === 'New Chat') {
+          // Get the first few words for the chat title
+          const words = messageText.split(' ');
+          const chatTitle = words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
+          
+          // Update the chat title
+          updateChatTitle(currentChatId, chatTitle);
+        }
+        
       } catch (error) {
         // Remove loading indicator
         chatMessages.removeChild(loadingMessage);
@@ -195,12 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Scroll to the bottom
       chatMessages.scrollTop = chatMessages.scrollHeight;
-      
-      // Create a new item in the sidebar for this chat if it's the first message
-      if (chatHistory[currentChatId].messages.length === 1) {
-        // Update the chat title to be based on the first message
-        updateChatTitle(currentChatId, truncateText(messageText, 30));
-      }
     }
     
     // Function to create a new chat
@@ -222,7 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
       newChatItem.setAttribute('data-chat-id', newChatId);
       newChatItem.textContent = 'New Chat';
       
-      // Add click event and context menu event
+      todayChats.appendChild(newChatItem);
+      
+      // Add event listeners to the new chat item
       newChatItem.addEventListener('click', () => loadChat(newChatId));
       newChatItem.addEventListener('contextmenu', (event) => {
         event.preventDefault();
@@ -233,8 +300,6 @@ document.addEventListener('DOMContentLoaded', () => {
         contextMenu.style.top = `${event.pageY}px`;
         contextMenu.style.left = `${event.pageX}px`;
       });
-      
-      todayChats.appendChild(newChatItem);
       
       // Load the new chat
       loadChat(newChatId);
@@ -257,7 +322,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to update the chat title
     function updateChatTitle(chatId, newTitle) {
       chatHistory[chatId].title = newTitle;
-      document.querySelector(`[data-chat-id="${chatId}"]`).textContent = newTitle;
+      
+      // Update the sidebar item
+      const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
+      if (chatItem) {
+        chatItem.textContent = newTitle;
+      }
+      
+      // Update the current title if it's the active chat
       if (chatId === currentChatId) {
         currentChatTitle.textContent = newTitle;
       }
@@ -287,12 +359,6 @@ document.addEventListener('DOMContentLoaded', () => {
         default:
           messageInput.placeholder = 'Message ChatGPT';
       }
-    }
-    
-    // Helper function to truncate text
-    function truncateText(text, maxLength) {
-      if (text.length <= maxLength) return text;
-      return text.substring(0, maxLength) + '...';
     }
     
     // Initialize with the first chat
