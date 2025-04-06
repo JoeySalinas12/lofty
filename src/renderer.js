@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modelToUse = getModeModel(currentMode);
         
         // Query the LLM through the IPC bridge
-        const botResponse = await window.electronAPI.queryLLM(modelToUse, messageText);
+        const botResponse = await window.electronAPI.queryLLM(modelToUse, messageText, currentChatId);
         
         // Remove loading indicator
         chatMessages.removeChild(loadingMessage);

@@ -253,3 +253,21 @@ function setupChatHandlers() {
     console.log(`Mode changed to: ${mode}`);
   });
 }
+
+// Handle LLM queries - this needs to use invoke/handle for async responses
+ipcMain.handle('query-llm', async (event, model, prompt, chatId) => {
+  console.log(`Querying ${model} with prompt: ${prompt} for chat: ${chatId}`);
+  try {
+    const response = await LLMBridge.queryLLM(model, prompt);
+    
+    // Save the message exchange to Supabase
+    if (authService.isAuthenticated()) {
+      await chatService.saveMessage(model, prompt, response, chatId);
+    }
+    
+    return response;
+  } catch (error) {
+    console.error(`Error querying LLM: ${error.message}`);
+    throw error; // This will be caught in the renderer
+  }
+});
