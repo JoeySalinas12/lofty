@@ -80,7 +80,7 @@ class ChatService {
 
     const conversations = [];
     let currentConversation = {
-      id: `conv-${Date.now()}`,
+      id: `conv-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       title: this.generateChatTitle(sortedMessages[0].prompt),
       messages: [],
       created_at: sortedMessages[0].created_at,
@@ -90,39 +90,53 @@ class ChatService {
     const timeThreshold = 30 * 60 * 1000;
     let lastTimestamp = new Date(sortedMessages[0].created_at).getTime();
 
-    sortedMessages.forEach(message => {
-      const currentTimestamp = new Date(message.created_at).getTime();
+    for (let i = 0; i < sortedMessages.length; i += 2) {
+      const promptMsg = sortedMessages[i];
+      const responseMsg = sortedMessages[i + 1];
+      
+      // Skip if we don't have a complete prompt-response pair
+      if (!responseMsg) continue;
+      
+      const currentTimestamp = new Date(promptMsg.created_at).getTime();
       
       // If time gap is too large, start a new conversation
       if (currentTimestamp - lastTimestamp > timeThreshold) {
-        conversations.push(currentConversation);
+        // Save the current conversation if it has messages
+        if (currentConversation.messages.length > 0) {
+          conversations.push(currentConversation);
+        }
+        
+        // Create a new conversation
         currentConversation = {
           id: `conv-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          title: this.generateChatTitle(message.prompt),
+          title: this.generateChatTitle(promptMsg.prompt),
           messages: [],
-          created_at: message.created_at,
+          created_at: promptMsg.created_at,
         };
       }
 
-      // Add message to current conversation
+      // Add message pair to current conversation
       currentConversation.messages.push({
         type: 'user',
-        content: message.prompt,
-        timestamp: message.created_at,
+        content: promptMsg.prompt,
+        timestamp: promptMsg.created_at,
       });
       
       currentConversation.messages.push({
         type: 'bot',
-        content: message.response,
-        model: message.model_name,
-        timestamp: message.created_at,
+        content: responseMsg.response,
+        model: responseMsg.model_name,
+        timestamp: responseMsg.created_at,
       });
 
       lastTimestamp = currentTimestamp;
-    });
+    }
 
-    // Add the last conversation
-    conversations.push(currentConversation);
+    // Add the last conversation if it has messages
+    if (currentConversation.messages.length > 0) {
+      conversations.push(currentConversation);
+    }
+    
     return conversations;
   }
 

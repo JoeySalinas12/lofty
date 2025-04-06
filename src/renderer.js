@@ -64,7 +64,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           
           // Process conversations
           result.conversations.forEach(conversation => {
-            chatHistory[conversation.id] = {
+            // Make sure each conversation gets a unique ID
+            const uniqueId = conversation.id || `conv-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+            
+            chatHistory[uniqueId] = {
               title: conversation.title,
               mode: determineConversationMode(conversation.messages),
               messages: conversation.messages,
