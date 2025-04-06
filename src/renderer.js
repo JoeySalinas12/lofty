@@ -56,24 +56,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Function to load chat history from Supabase
     async function loadChatHistoryFromSupabase() {
       try {
+        console.log("Loading chat history from Supabase...");
         const result = await window.electronAPI.getChatHistory();
         
         if (result.success && result.conversations) {
           // Clear existing chat history
           chatHistory = {};
           
+          console.log(`Loaded ${result.conversations.length} conversations`);
+          
           // Process conversations
           result.conversations.forEach(conversation => {
             // Make sure each conversation gets a unique ID
             const uniqueId = conversation.id || `conv-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
             
-            chatHistory[uniqueId] = {
-              title: conversation.title,
-              mode: determineConversationMode(conversation.messages),
-              messages: conversation.messages,
-              created_at: conversation.created_at
-            };
+            // Only add conversations that have messages
+            if (conversation.messages && conversation.messages.length > 0) {
+              chatHistory[uniqueId] = {
+                title: conversation.title || "Untitled Chat",
+                mode: determineConversationMode(conversation.messages),
+                messages: conversation.messages,
+                created_at: conversation.created_at
+              };
+              console.log(`Added conversation: ${uniqueId} with ${conversation.messages.length} messages`);
+            }
           });
+          
+          console.log(`Processed ${Object.keys(chatHistory).length} valid conversations`);
           
           // Update sidebar with chat history
           updateChatSidebar();
@@ -82,13 +91,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (Object.keys(chatHistory).length > 0) {
             currentChatId = Object.keys(chatHistory)[0];
             loadChat(currentChatId);
+            console.log(`Loaded first chat: ${currentChatId}`);
           } else {
+            console.log("No existing chats, creating a new one");
             createNewChat();
           }
         } else if (result.error) {
           console.error('Error loading chat history:', result.error);
           createNewChat();
         } else {
+          console.log("No conversations returned, creating a new chat");
           createNewChat();
         }
       } catch (error) {

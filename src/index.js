@@ -271,3 +271,25 @@ ipcMain.handle('query-llm', async (event, model, prompt, chatId) => {
     throw error; // This will be caught in the renderer
   }
 });
+
+// Handle getting chat history
+ipcMain.handle('get-chat-history', async () => {
+  if (!authService.isAuthenticated()) {
+    return { error: 'Not authenticated' };
+  }
+  
+  try {
+    const result = await chatService.getChatHistory();
+    
+    if (result.success && result.data) {
+      // Group the messages into conversations
+      const conversations = chatService.groupChatHistory(result.data, result.uniqueChatIds);
+      return { success: true, conversations };
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error getting chat history:', error);
+    return { error: error.message };
+  }
+});

@@ -50,15 +50,38 @@ class ChatService {
         throw new Error('User not authenticated');
       }
 
+      // First get distinct chat_ids to know what conversations exist
+      const { data: distinctChats, error: distinctError } = await supabase
+        .from('queries')
+        .select('chat_id')
+        .eq('user_id', user.id)
+        .not('chat_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+        
+      if (distinctError) throw distinctError;
+      
+      // Get unique chat_ids (filter out nulls and duplicates)
+      const uniqueChatIds = [...new Set(distinctChats
+        .map(item => item.chat_id)
+        .filter(id => id !== null))];
+        
+      console.log(`Found ${uniqueChatIds.length} unique chat conversations`);
+      
+      // Now get all messages for these chats
       const { data, error } = await supabase
         .from('queries')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
         .limit(limit);
 
       if (error) throw error;
-      return { success: true, data };
+      
+      // Log the results for debugging
+      console.log(`Retrieved ${data.length} total message records`);
+      
+      return { success: true, data, uniqueChatIds };
     } catch (error) {
       console.error('Error fetching chat history:', error);
       return { error: error.message };
@@ -67,130 +90,102 @@ class ChatService {
 
   /**
    * Group chat history by conversation
-   * This function groups messages by their chat_id or timestamp proximity
+   * This function groups messages by their chat_id 
    * @param {Array} messages - Array of message objects
+   * @param {Array} uniqueChatIds - List of unique chat IDs
    * @returns {Array} Grouped chat history
    */
-  groupChatHistory(messages) {
+  groupChatHistory(messages, uniqueChatIds = []) {
     if (!messages || messages.length === 0) return [];
     
-    // First try to group by chat_id if available
-    const chatIdGroups = {};
-    const noIdMessages = [];
+    // Create a map to hold conversations by chat_id
+    const chatGroups = {};
     
-    // Sort messages by created_at
-    const sortedMessages = [...messages].sort((a, b) => 
-      new Date(a.created_at) - new Date(b.created_at)
-    );
+    // Initialize empty conversations for each unique chat_id
+    uniqueChatIds.forEach(chatId => {
+      chatGroups[chatId] = {
+        id: chatId,
+        title: '',  // Will be set from first message
+        messages: [],
+        created_at: null  // Will be set from first message
+      };
+    });
     
-    // First grouping pass - use chat_id if available
+    // Group messages by chat_id and organize them by prompt/response pairs
+    // First sort messages by chat_id and created_at
+    const sortedMessages = [...messages].sort((a, b) => {
+      // First sort by chat_id
+      if (a.chat_id && b.chat_id) {
+        if (a.chat_id !== b.chat_id) {
+          return a.chat_id.localeCompare(b.chat_id);
+        }
+      } else if (a.chat_id) {
+        return -1;
+      } else if (b.chat_id) {
+        return 1;
+      }
+      
+      // Then sort by created_at
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+    
+    // Process messages in pairs
     for (let i = 0; i < sortedMessages.length; i++) {
       const message = sortedMessages[i];
+      const chatId = message.chat_id;
       
-      if (message.chat_id) {
-        // Group by chat_id
-        if (!chatIdGroups[message.chat_id]) {
-          chatIdGroups[message.chat_id] = {
-            id: message.chat_id,
-            title: this.generateChatTitle(message.prompt),
-            messages: [],
-            created_at: message.created_at,
-          };
-        }
-        
-        // Check if this is a prompt message
-        if (i % 2 === 0) {
-          // Add user message
-          chatIdGroups[message.chat_id].messages.push({
-            type: 'user',
-            content: message.prompt,
-            timestamp: message.created_at,
-          });
-          
-          // Try to add corresponding response message if it exists
-          if (i + 1 < sortedMessages.length) {
-            const responseMsg = sortedMessages[i + 1];
-            chatIdGroups[message.chat_id].messages.push({
-              type: 'bot',
-              content: responseMsg.response,
-              model: responseMsg.model_name,
-              timestamp: responseMsg.created_at,
-            });
-          }
-        }
-      } else {
-        // Collect messages with no chat_id for time-based grouping
-        noIdMessages.push(message);
+      // Skip messages without chat_id
+      if (!chatId) continue;
+      
+      // If this is a new chat_id we haven't seen before, initialize it
+      if (!chatGroups[chatId]) {
+        chatGroups[chatId] = {
+          id: chatId,
+          title: '',
+          messages: [],
+          created_at: null
+        };
       }
-    }
-    
-    // Create conversation objects from the chat_id groups
-    const conversations = Object.values(chatIdGroups);
-    
-    // If we have messages with no chat_id, group them by time
-    if (noIdMessages.length > 0) {
-      // Time threshold for grouping (30 minutes in milliseconds)
-      const timeThreshold = 30 * 60 * 1000;
       
-      let currentConversation = {
-        id: `conv-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        title: this.generateChatTitle(noIdMessages[0].prompt),
-        messages: [],
-        created_at: noIdMessages[0].created_at,
-      };
+      // Set the title from the first prompt if not set yet
+      if (!chatGroups[chatId].title && message.prompt) {
+        chatGroups[chatId].title = this.generateChatTitle(message.prompt);
+      }
       
-      let lastTimestamp = new Date(noIdMessages[0].created_at).getTime();
+      // Set created_at from the earliest message if not set yet
+      if (!chatGroups[chatId].created_at || 
+          new Date(message.created_at) < new Date(chatGroups[chatId].created_at)) {
+        chatGroups[chatId].created_at = message.created_at;
+      }
       
-      for (let i = 0; i < noIdMessages.length; i += 2) {
-        const promptMsg = noIdMessages[i];
-        const responseMsg = noIdMessages[i + 1];
-        
-        // Skip if we don't have a complete prompt-response pair
-        if (!responseMsg) continue;
-        
-        const currentTimestamp = new Date(promptMsg.created_at).getTime();
-        
-        // If time gap is too large, start a new conversation
-        if (currentTimestamp - lastTimestamp > timeThreshold) {
-          // Save the current conversation if it has messages
-          if (currentConversation.messages.length > 0) {
-            conversations.push(currentConversation);
-          }
-          
-          // Create a new conversation
-          currentConversation = {
-            id: `conv-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-            title: this.generateChatTitle(promptMsg.prompt),
-            messages: [],
-            created_at: promptMsg.created_at,
-          };
-        }
-        
-        // Add message pair to current conversation
-        currentConversation.messages.push({
-          type: 'user',
-          content: promptMsg.prompt,
-          timestamp: promptMsg.created_at,
-        });
-        
-        currentConversation.messages.push({
+      // Add user message
+      chatGroups[chatId].messages.push({
+        type: 'user',
+        content: message.prompt,
+        timestamp: message.created_at,
+      });
+      
+      // Add bot message if this is a complete pair
+      if (message.response) {
+        chatGroups[chatId].messages.push({
           type: 'bot',
-          content: responseMsg.response,
-          model: responseMsg.model_name,
-          timestamp: responseMsg.created_at,
+          content: message.response,
+          model: message.model_name,
+          timestamp: message.created_at,
         });
-        
-        lastTimestamp = currentTimestamp;
-      }
-      
-      // Add the last conversation if it has messages
-      if (currentConversation.messages.length > 0) {
-        conversations.push(currentConversation);
       }
     }
     
-    // Sort all conversations by created_at (newest first)
-    return conversations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    // Convert the map to an array
+    const conversations = Object.values(chatGroups);
+    
+    // Remove any empty conversations or those without titles
+    const nonEmptyConversations = conversations.filter(conv => 
+      conv.messages.length > 0 && conv.title !== '');
+    
+    // Sort conversations by created_at (newest first)
+    return nonEmptyConversations.sort((a, b) => 
+      new Date(b.created_at) - new Date(a.created_at));
   }
 
   /**
@@ -199,6 +194,8 @@ class ChatService {
    * @returns {string} Generated title
    */
   generateChatTitle(firstMessage) {
+    if (!firstMessage) return "Untitled Chat";
+    
     // Limit to first 5 words with ellipsis if longer
     const words = firstMessage.split(' ');
     return words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
