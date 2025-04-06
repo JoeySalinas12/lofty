@@ -1,15 +1,19 @@
 // Wait for the DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Store chat history - start with just one empty chat
-    const chatHistory = {
-      'chat-1': {
-        title: 'New Chat',
-        mode: 'reasoning',
-        messages: []
-      }
-    };
+document.addEventListener('DOMContentLoaded', async () => {
+    // First check if user is authenticated
+    const isAuthenticated = await window.electronAPI.checkAuth();
+    if (!isAuthenticated) {
+      window.location.href = 'login.html';
+      return;
+    }
   
-    let currentChatId = 'chat-1';
+    // Get current user info
+    const currentUser = await window.electronAPI.getCurrentUser();
+    updateUserInfo(currentUser);
+  
+    // Store chat history - will be populated from Supabase
+    let chatHistory = {};
+    let currentChatId = null;
     let contextMenuTargetId = null;
   
     // Get UI elements
@@ -22,9 +26,148 @@ document.addEventListener('DOMContentLoaded', () => {
     const contextMenu = document.getElementById('context-menu');
     const deleteChat = document.getElementById('delete-chat');
     const renameChat = document.getElementById('rename-chat');
+    const todayChats = document.getElementById('today-chats');
+    const sidebarUser = document.querySelector('.sidebar-user');
     
-    // Set up event listeners for initial chat item
+    // Add logout button
+    const logoutButton = document.createElement('button');
+    logoutButton.id = 'logout-btn';
+    logoutButton.textContent = 'Logout';
+    logoutButton.style.marginLeft = '10px';
+    logoutButton.style.padding = '4px 8px';
+    logoutButton.style.background = '#3a3a3a';
+    logoutButton.style.border = 'none';
+    logoutButton.style.borderRadius = '4px';
+    logoutButton.style.color = '#ddd';
+    logoutButton.style.cursor = 'pointer';
+    sidebarUser.appendChild(logoutButton);
+    
+    // Set up logout handler
+    logoutButton.addEventListener('click', async () => {
+      await window.electronAPI.logout();
+    });
+  
+    // Load chat history from Supabase
+    await loadChatHistoryFromSupabase();
+    
+    // Setup event listeners for chat items
     setupChatItemListeners();
+    
+    // Function to load chat history from Supabase
+    async function loadChatHistoryFromSupabase() {
+      try {
+        const result = await window.electronAPI.getChatHistory();
+        
+        if (result.success && result.conversations) {
+          // Clear existing chat history
+          chatHistory = {};
+          
+          // Process conversations
+          result.conversations.forEach(conversation => {
+            chatHistory[conversation.id] = {
+              title: conversation.title,
+              mode: determineConversationMode(conversation.messages),
+              messages: conversation.messages,
+              created_at: conversation.created_at
+            };
+          });
+          
+          // Update sidebar with chat history
+          updateChatSidebar();
+          
+          // Load the first chat or create a new one if none exists
+          if (Object.keys(chatHistory).length > 0) {
+            currentChatId = Object.keys(chatHistory)[0];
+            loadChat(currentChatId);
+          } else {
+            createNewChat();
+          }
+        } else if (result.error) {
+          console.error('Error loading chat history:', result.error);
+          createNewChat();
+        } else {
+          createNewChat();
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+        createNewChat();
+      }
+    }
+    
+    // Function to determine the mode of a conversation based on messages
+    function determineConversationMode(messages) {
+      // Look for bot messages that might have model info
+      const botMessages = messages.filter(msg => msg.type === 'bot' && msg.model);
+      
+      if (botMessages.length > 0) {
+        // Get the most commonly used model
+        const modelCounts = {};
+        botMessages.forEach(msg => {
+          modelCounts[msg.model] = (modelCounts[msg.model] || 0) + 1;
+        });
+        
+        // Find the most common model
+        const mostCommonModel = Object.keys(modelCounts).reduce((a, b) => 
+          modelCounts[a] > modelCounts[b] ? a : b
+        );
+        
+        // Map model to mode
+        if (mostCommonModel.includes('claude')) return 'reasoning';
+        if (mostCommonModel.includes('gemini')) return 'math';
+        if (mostCommonModel.includes('gpt')) return 'programming';
+      }
+      
+      // Default to reasoning
+      return 'reasoning';
+    }
+    
+    // Function to update the sidebar with chat history
+    function updateChatSidebar() {
+      // Clear existing chats
+      todayChats.innerHTML = '';
+      
+      // Sort chats by creation date (newest first)
+      const sortedChatIds = Object.keys(chatHistory).sort((a, b) => {
+        const dateA = new Date(chatHistory[a].created_at || 0);
+        const dateB = new Date(chatHistory[b].created_at || 0);
+        return dateB - dateA;
+      });
+      
+      // Add each chat to sidebar
+      sortedChatIds.forEach(chatId => {
+        const chat = chatHistory[chatId];
+        const chatItem = document.createElement('div');
+        chatItem.className = 'sidebar-item';
+        chatItem.classList.toggle('active', chatId === currentChatId);
+        chatItem.setAttribute('data-chat-id', chatId);
+        chatItem.textContent = chat.title;
+        todayChats.appendChild(chatItem);
+      });
+      
+      // Setup listeners
+      setupChatItemListeners();
+    }
+    
+    // Function to update user info in the sidebar
+    function updateUserInfo(user) {
+      if (!user) return;
+      
+      const userAvatar = document.querySelector('.user-avatar');
+      const userName = document.querySelector('.user-name');
+      
+      // Set user name (use email if no name available)
+      const displayName = user.user_metadata?.name || user.email || 'User';
+      userName.textContent = displayName;
+      
+      // Set avatar initials
+      const initials = displayName
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase();
+      userAvatar.textContent = initials;
+    }
     
     // Function to set up event listeners for chat history items
     function setupChatItemListeners() {
@@ -80,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contextMenu.style.display = 'none';
       }
     });
-
+  
     // Rename chat when clicking the rename option
     renameChat.addEventListener('click', () => {
       if (contextMenuTargetId) {
@@ -91,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     
-    // Function to show an input field for renaming instead of using prompt()
+    // Function to show an input field for renaming
     function showRenameInput(chatId) {
       // Find the chat item
       const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
@@ -144,7 +287,11 @@ document.addEventListener('DOMContentLoaded', () => {
     modeDropdown.addEventListener('change', (event) => {
       const selectedMode = event.target.value;
       window.electronAPI.changeMode(selectedMode);
-      chatHistory[currentChatId].mode = selectedMode;
+      
+      if (currentChatId && chatHistory[currentChatId]) {
+        chatHistory[currentChatId].mode = selectedMode;
+      }
+      
       updateUIForMode(selectedMode);
     });
     
@@ -213,8 +360,17 @@ document.addEventListener('DOMContentLoaded', () => {
       // Add the message to the UI
       appendMessage('user', messageText);
       
+      // Make sure we have a current chat
+      if (!currentChatId || !chatHistory[currentChatId]) {
+        createNewChat();
+      }
+      
       // Add the message to chat history
-      chatHistory[currentChatId].messages.push({ type: 'user', content: messageText });
+      chatHistory[currentChatId].messages.push({ 
+        type: 'user', 
+        content: messageText,
+        timestamp: new Date().toISOString()
+      });
       
       // Clear the input field
       messageInput.value = '';
@@ -241,7 +397,12 @@ document.addEventListener('DOMContentLoaded', () => {
         appendMessage('bot', botResponse);
         
         // Add the response to chat history
-        chatHistory[currentChatId].messages.push({ type: 'bot', content: botResponse });
+        chatHistory[currentChatId].messages.push({ 
+          type: 'bot', 
+          content: botResponse,
+          model: modelToUse,
+          timestamp: new Date().toISOString()
+        });
         
         // Check if this is the first message exchange and update chat title if needed
         if (chatHistory[currentChatId].messages.length === 2 && 
@@ -261,7 +422,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show error message
         const errorMessage = `Sorry, there was an error: ${error.message}`;
         appendMessage('bot', errorMessage);
-        chatHistory[currentChatId].messages.push({ type: 'bot', content: errorMessage });
+        chatHistory[currentChatId].messages.push({ 
+          type: 'bot', 
+          content: errorMessage,
+          timestamp: new Date().toISOString()
+        });
       }
       
       // Scroll to the bottom
@@ -271,35 +436,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to create a new chat
     function createNewChat() {
       // Generate a new chat ID
-      const newChatId = `chat-${Object.keys(chatHistory).length + 1}`;
+      const newChatId = `chat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       
       // Add to chat history
       chatHistory[newChatId] = {
         title: 'New Chat',
         mode: modeDropdown.value,
-        messages: []
+        messages: [],
+        created_at: new Date().toISOString()
       };
       
-      // Add to sidebar
-      const todayChats = document.getElementById('today-chats');
-      const newChatItem = document.createElement('div');
-      newChatItem.className = 'sidebar-item';
-      newChatItem.setAttribute('data-chat-id', newChatId);
-      newChatItem.textContent = 'New Chat';
-      
-      todayChats.appendChild(newChatItem);
-      
-      // Add event listeners to the new chat item
-      newChatItem.addEventListener('click', () => loadChat(newChatId));
-      newChatItem.addEventListener('contextmenu', (event) => {
-        event.preventDefault();
-        contextMenuTargetId = newChatId;
-        
-        // Position context menu at mouse pointer
-        contextMenu.style.display = 'block';
-        contextMenu.style.top = `${event.pageY}px`;
-        contextMenu.style.left = `${event.pageX}px`;
-      });
+      // Update sidebar
+      updateChatSidebar();
       
       // Load the new chat
       loadChat(newChatId);
@@ -338,28 +486,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to update UI based on the selected mode
     function updateUIForMode(mode) {
       const container = document.querySelector('.container');
-      const logoText = document.getElementById('logo-text')
+      const logoText = document.getElementById('logo-text');
       
       // Reset classes
       container.classList.remove('mode-reasoning', 'mode-math', 'mode-programming');
       
       // Add class for the selected mode
       container.classList.add(`mode-${mode}`);
-
-      // Update logo text based onthe current model
+  
+      // Update logo text based on the current model
       const currentModel = getModeModel(mode);
       switch (currentModel) {
         case 'claude':
-            logoText.textContent = 'Claude';
-            break;
+          logoText.textContent = 'Claude';
+          break;
         case 'gemini':
-            logoText.textContent = 'Gemini';
-            break;
+          logoText.textContent = 'Gemini';
+          break;
         case 'gpt':
-            logoText.textContent = 'ChatGPT';
-            break;
+          logoText.textContent = 'ChatGPT';
+          break;
         default:
-            logoText.textContent = 'ChatGPT'
+          logoText.textContent = 'ChatGPT';
       }
       
       // Update input placeholder based on mode
@@ -377,7 +525,4 @@ document.addEventListener('DOMContentLoaded', () => {
           messageInput.placeholder = 'Message ChatGPT';
       }
     }
-    
-    // Initialize with the first chat
-    loadChat(currentChatId);
   });
