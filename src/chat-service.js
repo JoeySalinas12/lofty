@@ -38,6 +38,34 @@ class ChatService {
   }
 
   /**
+   * Delete all messages associated with a specific chat ID
+   * @param {string} chatId - The ID of the chat to delete
+   * @returns {Promise<object>} Result of the delete operation
+   */
+  async deleteChat(chatId) {
+    try {
+      const user = authService.getCurrentUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Delete all messages associated with this chat_id for the current user
+      const { data, error } = await supabase
+        .from('queries')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('chat_id', chatId);
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      return { error: error.message };
+    }
+  }
+
+  /**
    * Get chat history for the current user
    * @param {number} limit - Maximum number of records to return
    * @returns {Promise<object>} Chat history data

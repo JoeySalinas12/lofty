@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Chat functionality
   loadChat: (chatId) => ipcRenderer.send('load-chat', chatId),
-  deleteChat: (chatId) => ipcRenderer.send('delete-chat', chatId),
+  deleteChat: (chatId) => ipcRenderer.invoke('delete-chat', chatId),
   queryLLM: (model, prompt, chatId) => ipcRenderer.invoke('query-llm', model, prompt, chatId),
   
   // Chat history

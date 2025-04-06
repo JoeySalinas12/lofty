@@ -196,14 +196,14 @@ function setupAuthHandlers() {
 
 function setupChatHandlers() {
   // Handle LLM queries - this needs to use invoke/handle for async responses
-  ipcMain.handle('query-llm', async (event, model, prompt) => {
-    console.log(`Querying ${model} with prompt: ${prompt}`);
+  ipcMain.handle('query-llm', async (event, model, prompt, chatId) => {
+    console.log(`Querying ${model} with prompt: ${prompt} for chat: ${chatId}`);
     try {
       const response = await LLMBridge.queryLLM(model, prompt);
       
       // Save the message exchange to Supabase
       if (authService.isAuthenticated()) {
-        await chatService.saveMessage(model, prompt, response);
+        await chatService.saveMessage(model, prompt, response, chatId);
       }
       
       return response;
@@ -224,7 +224,7 @@ function setupChatHandlers() {
       
       if (result.success && result.data) {
         // Group the messages into conversations
-        const conversations = chatService.groupChatHistory(result.data);
+        const conversations = chatService.groupChatHistory(result.data, result.uniqueChatIds);
         return { success: true, conversations };
       }
       
@@ -241,11 +241,14 @@ function setupChatHandlers() {
     // Loading chat is now handled in the renderer by storing chat history in memory
   });
 
-  // Handle deleting a chat
-  ipcMain.on('delete-chat', (event, chatId) => {
+  // Handle deleting a chat - updated to delete from Supabase
+  ipcMain.handle('delete-chat', async (event, chatId) => {
     console.log(`Deleting chat: ${chatId}`);
-    // Actual deletion of messages would need to be implemented with Supabase
-    // For now, chat deletion only happens in the UI
+    if (authService.isAuthenticated()) {
+      const result = await chatService.deleteChat(chatId);
+      return result;
+    }
+    return { error: 'Not authenticated' };
   });
 
   // Handle mode changes if needed
@@ -254,42 +257,4 @@ function setupChatHandlers() {
   });
 }
 
-// Handle LLM queries - this needs to use invoke/handle for async responses
-ipcMain.handle('query-llm', async (event, model, prompt, chatId) => {
-  console.log(`Querying ${model} with prompt: ${prompt} for chat: ${chatId}`);
-  try {
-    const response = await LLMBridge.queryLLM(model, prompt);
-    
-    // Save the message exchange to Supabase
-    if (authService.isAuthenticated()) {
-      await chatService.saveMessage(model, prompt, response, chatId);
-    }
-    
-    return response;
-  } catch (error) {
-    console.error(`Error querying LLM: ${error.message}`);
-    throw error; // This will be caught in the renderer
-  }
-});
-
-// Handle getting chat history
-ipcMain.handle('get-chat-history', async () => {
-  if (!authService.isAuthenticated()) {
-    return { error: 'Not authenticated' };
-  }
-  
-  try {
-    const result = await chatService.getChatHistory();
-    
-    if (result.success && result.data) {
-      // Group the messages into conversations
-      const conversations = chatService.groupChatHistory(result.data, result.uniqueChatIds);
-      return { success: true, conversations };
-    }
-    
-    return result;
-  } catch (error) {
-    console.error('Error getting chat history:', error);
-    return { error: error.message };
-  }
-});
+// Removed duplicated code
