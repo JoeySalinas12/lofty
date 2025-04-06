@@ -40,10 +40,24 @@ body {
   padding-top: 30px; /* Add space for the drag region */
 }
 
+/* You can add this to your styles.css file */
 .logo {
   padding: 10px 20px;
   font-size: 18px;
   font-weight: bold;
+  transition: color 0.3s;
+}
+
+.mode-reasoning .logo {
+  color: #4a76a8; /* Blue for Claude */
+}
+
+.mode-math .logo {
+  color: #8a4aa8; /* Purple for Gemini */
+}
+
+.mode-programming .logo {
+  color: #4aa86c; /* Green for GPT */
 }
 
 .new-chat-button {

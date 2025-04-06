@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update title
       currentChatTitle.textContent = chat.title;
       
-      // Update mode dropdown
+      // Update mode dropdown (including logo)
       modeDropdown.value = chat.mode;
       updateUIForMode(chat.mode);
       
@@ -338,12 +338,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to update UI based on the selected mode
     function updateUIForMode(mode) {
       const container = document.querySelector('.container');
+      const logoText = document.getElementById('logo-text')
       
       // Reset classes
       container.classList.remove('mode-reasoning', 'mode-math', 'mode-programming');
       
       // Add class for the selected mode
       container.classList.add(`mode-${mode}`);
+
+      // Update logo text based onthe current model
+      const currentModel = getModeModel(mode);
+      switch (currentModel) {
+        case 'claude':
+            logoText.textContent = 'Claude';
+            break;
+        case 'gemini':
+            logoText.textContent = 'Gemini';
+            break;
+        case 'gpt':
+            logoText.textContent = 'ChatGPT';
+            break;
+        default:
+            logoText.textContent = 'ChatGPT'
+      }
       
       // Update input placeholder based on mode
       switch (mode) {
