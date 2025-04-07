@@ -12,20 +12,31 @@
     <div class="drag-region"></div>
     
     <div class="sidebar">
-      <div class="logo" id="logo-text">ChatGPT</div>
-      <div class="new-chat-button">
-        <button id="new-chat-btn">+ New Chat</button>
-      </div>
-      <div class="sidebar-section">
-        <div class="section-title">Today</div>
-        <div class="chat-history" id="today-chats">
-          <!-- Chat history will be populated dynamically -->
-          <div id="loading-sidebar" class="sidebar-item">Loading...</div>
+      <!-- Sidebar content area (everything except user profile) -->
+      <div class="sidebar-content">
+        <div class="logo" id="logo-text">ChatGPT</div>
+        <div class="new-chat-button">
+          <button id="new-chat-btn">+ New Chat</button>
+        </div>
+        <div class="sidebar-section">
+          <div class="section-title">Today</div>
+          <div class="chat-history" id="today-chats">
+            <!-- Chat history will be populated dynamically -->
+            <div id="loading-sidebar" class="sidebar-item">Loading...</div>
+          </div>
         </div>
       </div>
-      <div class="sidebar-user">
+      
+      <!-- Fixed user profile at the bottom -->
+      <div class="sidebar-user" id="user-profile">
         <div class="user-avatar">JS</div>
         <div class="user-name">Joey Salinas</div>
+        <!-- User popup menu -->
+        <div class="user-popup" id="user-popup">
+          <div class="popup-item" id="logout-btn">
+            <i>↪</i> Logout
+          </div>
+        </div>
       </div>
     </div>
     

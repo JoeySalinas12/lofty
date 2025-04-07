@@ -30,22 +30,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   const sidebarUser = document.querySelector('.sidebar-user');
   const loadingChat = document.getElementById('loading-chat');
   const loadingSidebar = document.getElementById('loading-sidebar');
+  const userPopup = document.getElementById('user-popup');
+  const logoutBtn = document.getElementById('logout-btn');
+  const userProfile = document.getElementById('user-profile');
   
-  // Add logout button
-  const logoutButton = document.createElement('button');
-  logoutButton.id = 'logout-btn';
-  logoutButton.textContent = 'Logout';
-  logoutButton.style.marginLeft = '10px';
-  logoutButton.style.padding = '4px 8px';
-  logoutButton.style.background = '#3a3a3a';
-  logoutButton.style.border = 'none';
-  logoutButton.style.borderRadius = '4px';
-  logoutButton.style.color = '#ddd';
-  logoutButton.style.cursor = 'pointer';
-  sidebarUser.appendChild(logoutButton);
+  // Set up user popup toggle
+  userProfile.addEventListener('click', (event) => {
+    // Toggle popup visibility
+    if (userPopup.style.display === 'block') {
+      userPopup.style.display = 'none';
+    } else {
+      userPopup.style.display = 'block';
+    }
+    
+    // Prevent the event from propagating to document
+    event.stopPropagation();
+  });
+  
+  // Close user popup when clicking elsewhere
+  document.addEventListener('click', (event) => {
+    if (!userProfile.contains(event.target) && userPopup.style.display === 'block') {
+      userPopup.style.display = 'none';
+    }
+  });
   
   // Set up logout handler
-  logoutButton.addEventListener('click', async () => {
+  logoutBtn.addEventListener('click', async () => {
     await window.electronAPI.logout();
   });
 
