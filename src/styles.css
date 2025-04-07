@@ -21,6 +21,15 @@ body {
   backdrop-filter: blur(10px); /* Add a blur effect to the entire container */
 }
 
+/* Rainbow gradient definition for reuse */
+.rainbow-gradient {
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
 /* Drag region for window movement */
 .drag-region {
   position: absolute;
@@ -52,18 +61,12 @@ body {
   font-size: 18px;
   font-weight: bold;
   transition: color 0.3s;
-}
-
-.mode-reasoning .logo {
-  color: #4a76a8; /* Blue for Claude */
-}
-
-.mode-math .logo {
-  color: #8a4aa8; /* Purple for Gemini */
-}
-
-.mode-programming .logo {
-  color: #4aa86c; /* Green for GPT */
+  /* Apply rainbow gradient to logo */
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
 }
 
 .new-chat-button {
@@ -184,13 +187,28 @@ body {
 .user-avatar {
   width: 30px;
   height: 30px;
-  background-color: #555;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 10px;
   font-size: 12px;
+  background: white;
+  color: #333;
+  position: relative;
+}
+
+/* Rainbow border around avatar */
+.user-avatar::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c);
+  border-radius: 50%;
+  z-index: -1;
 }
 
 .user-popup {
@@ -261,7 +279,8 @@ body {
   padding: 10px 20px;
   border-bottom-width: 3px; /* Make the border slightly thicker */
   border-bottom-style: solid;
-  border-bottom-color: #383838;
+  /* Use rainbow gradient for the border */
+  border-image: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c) 1;
 }
 
 .mode-selector {
@@ -376,17 +395,11 @@ body {
   margin-left: 10px;
 }
 
-/* Mode-specific styles */
-.mode-reasoning .mode-selector-container {
-  border-bottom-color: #4a76a8;
-}
-
-.mode-math .mode-selector-container {
-  border-bottom-color: #8a4aa8;
-}
-
+/* Keep the mode-selector-container consistent */
+.mode-reasoning .mode-selector-container,
+.mode-math .mode-selector-container,
 .mode-programming .mode-selector-container {
-  border-bottom-color: #4aa86c;
+  border-image: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c) 1;
 }
 
 /* Context menu styles */

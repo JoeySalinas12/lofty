@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add class for the selected mode
     container.classList.add(`mode-${mode}`);
 
-    // Update logo text based on the current model
+    // Update logo text based on the current model but keep rainbow gradient
     const currentModel = getModeModel(mode);
     switch (currentModel) {
       case 'claude':
@@ -654,4 +654,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageInput.placeholder = 'Message ChatGPT';
     }
   }
-});
+  });
