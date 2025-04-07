@@ -56,7 +56,7 @@ body {
 .sparkle-effect {
   background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c, #4a76a8);
   background-size: 300% 100%;
-  animation: sparkle 2.5s ease infinite; /* Slowed down to 4 seconds */
+  animation: sparkle 4s ease infinite; /* Slowed down to 4 seconds */
 }
 
 /* Applied to text elements */
@@ -100,7 +100,7 @@ body {
   padding: 10px 20px;
   font-size: 18px;
   font-weight: bold;
-  transition: color 0.3s;
+  transition: all 0.5s ease; /* Smoother transition */
   /* Apply rainbow gradient to logo */
   background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c);
   -webkit-background-clip: text;
@@ -314,6 +314,11 @@ body {
   color: #999;
 }
 
+.current-chat-title {
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
 /* Mode selector */
 .mode-selector-container {
   padding: 10px 20px;
@@ -321,6 +326,29 @@ body {
   border-bottom-style: solid;
   /* Use rainbow gradient for the border */
   border-image: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c) 1;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Sparkle effect for the mode selector container */
+.mode-selector-container.sparkle-active {
+  box-shadow: 0 4px 12px rgba(74, 118, 168, 0.3); /* Add a subtle glow */
+}
+
+.mode-selector-container.sparkle-active::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c, #4a76a8);
+  background-size: 300% 100%;
+  animation: sparkle 4s ease infinite; /* Match the slowed animation time */
+  z-index: 1;
+  box-shadow: 0 0 10px rgba(74, 118, 168, 0.7), 
+              0 0 20px rgba(138, 74, 168, 0.5), 
+              0 0 30px rgba(74, 168, 108, 0.3); /* Add a glow effect */
 }
 
 .mode-selector {
@@ -351,13 +379,14 @@ body {
   pointer-events: none;
 }
 
-/* Chat container styles */
+/* Chat container styles - updated to match ChatGPT-like appearance with darker colors */
 .chat-container {
   flex: 1;
-  padding: 20px;
+  padding: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  background-color: #212121; /* Darker, more slate gray background like in the image */
 }
 
 /* Custom scrollbar for chat container */
@@ -366,52 +395,65 @@ body {
 }
 
 .chat-container::-webkit-scrollbar-track {
-  background: rgba(65, 65, 65, 0.1);
+  background: rgba(33, 33, 33, 0.1);
   border-radius: 4px;
 }
 
 .chat-container::-webkit-scrollbar-thumb {
-  background: #555;
+  background: #444;
   border-radius: 4px;
 }
 
 .chat-container::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: #555;
 }
 
+/* Message styles updated to match the darker theme */
 .message {
-  margin-bottom: 20px;
-  max-width: 80%;
-  padding: 10px 15px;
-  border-radius: 8px;
+  margin-bottom: 0;
+  max-width: 100%;
+  width: 100%;
+  padding: 20px;
+  border-radius: 0;
+  display: flex;
+  align-items: flex-start;
 }
 
 .user-message {
-  align-self: flex-end;
-  background-color: rgba(68, 70, 84, 0.95);
+  align-self: stretch;
+  background-color: #212121; /* Very dark background for user messages */
 }
 
 .bot-message {
-  align-self: flex-start;
-  background-color: rgba(52, 53, 65, 0.95);
+  align-self: stretch;
+  background-color: #262626; /* Slightly lighter but still very dark for bot messages */
 }
 
 .message-content {
   line-height: 1.5;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-/* Input area styles */
+/* Input area styles - updated to match the darker theme */
 .input-area {
-  padding: 20px;
-  border-top: none; /* Remove the thin line above chat box */
+  padding: 15px 20px;
+  background-color: #212121; /* Match the main background */
+  position: relative;
+  border-top: 1px solid rgba(255, 255, 255, 0.05); /* Very subtle border */
 }
 
 .message-input {
   display: flex;
   align-items: center;
-  background-color: rgba(58, 58, 58, 0.9);
+  background-color: #2d2d2d; /* Dark input field */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Very subtle border */
   border-radius: 8px;
-  padding: 8px 15px;
+  padding: 10px 15px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .input-button {
@@ -429,6 +471,7 @@ body {
   color: #fff;
   outline: none;
   padding: 8px 0;
+  font-size: 16px;
 }
 
 .send {
@@ -495,7 +538,7 @@ body {
 
 /* New loading chat message style */
 .message.bot-message.loading {
-  background-color: rgba(46, 46, 55, 0.9);
+  background-color: #262626;
 }
 
 .message.bot-message.loading .message-content {
@@ -507,8 +550,8 @@ body {
   content: '';
   width: 12px;
   height: 12px;
-  border: 2px solid #555;
-  border-top: 2px solid #777;
+  border: 2px solid #444;
+  border-top: 2px solid #666;
   border-radius: 50%;
   margin-left: 10px;
   animation: spin 1s linear infinite;
@@ -521,5 +564,5 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 0.5s ease-in;
+  animation: fadeIn 0.3s ease-in;
 }

@@ -592,6 +592,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     contentDiv.textContent = content;
     messageDiv.appendChild(contentDiv);
     
+    // Add to chat and scroll to bottom - without any sources or buttons
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
@@ -612,6 +613,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
+  // Function to update UI based on the selected mode
   // Function to update UI based on the selected mode
   function updateUIForMode(mode) {
     const container = document.querySelector('.container');
@@ -657,23 +659,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       logoText.classList.add('text-sparkle-effect');
       modeSelectorContainer.classList.add('sparkle-active');
       
-      // Remove the effect after the animation completes (increased to match new animation duration)
+      // Remove the effect after the animation completes
       setTimeout(() => {
         logoText.classList.remove('text-sparkle-effect');
         modeSelectorContainer.classList.remove('sparkle-active');
-      }, 8000); // Animation visible for 8 seconds (2 full cycles of the 4-second animation)
+      }, 8000); // Animation visible for 8 seconds
     }, 100); // Slightly increased delay
     
-    // Update input placeholder based on mode
+    // Update input placeholder based on mode - use format from the image
     switch (mode) {
       case 'reasoning':
-        messageInput.placeholder = 'Ask a reasoning question (Claude)...';
+        messageInput.placeholder = 'Message Claude';
         break;
       case 'math':
-        messageInput.placeholder = 'Ask a math question (Gemini)...';
+        messageInput.placeholder = 'Message Gemini';
         break;
       case 'programming':
-        messageInput.placeholder = 'Ask a programming question (GPT)...';
+        messageInput.placeholder = 'Message ChatGPT';
         break;
       default:
         messageInput.placeholder = 'Message ChatGPT';
