@@ -233,8 +233,8 @@ body {
   justify-content: center;
   margin-right: 10px;
   font-size: 12px;
-  background: white;
-  color: #333;
+  background: #333;
+  color: white;
   position: relative;
 }
 
@@ -328,6 +328,23 @@ body {
   border-image: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c) 1;
   position: relative;
   transition: all 0.3s ease;
+  /* Add permanent subtle glow */
+  box-shadow: 0 4px 8px rgba(74, 118, 168, 0.2);
+}
+
+/* Permanent glow effect for the border */
+.mode-selector-container::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c);
+  z-index: 1;
+  box-shadow: 0 0 8px rgba(74, 118, 168, 0.5), 
+              0 0 16px rgba(138, 74, 168, 0.3), 
+              0 0 24px rgba(74, 168, 108, 0.2);
 }
 
 /* Sparkle effect for the mode selector container */
@@ -370,7 +387,6 @@ body {
 }
 
 .mode-selector::after {
-  content: '▼';
   font-size: 10px;
   position: absolute;
   right: 10px;
@@ -422,17 +438,23 @@ body {
 .user-message {
   align-self: stretch;
   background-color: #212121; /* Very dark background for user messages */
+  justify-content: flex-end; /* Right-align the user message */
+}
+
+/* Specific alignment adjustments for user messages */
+.user-message .message-content {
+  text-align: right; /* Right-align the text content */
 }
 
 .bot-message {
   align-self: stretch;
   background-color: #262626; /* Slightly lighter but still very dark for bot messages */
+  justify-content: flex-start; /* Left-align the bot message */
 }
 
 .message-content {
   line-height: 1.5;
   max-width: 800px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -471,7 +493,7 @@ body {
   color: #fff;
   outline: none;
   padding: 8px 0;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .send {
