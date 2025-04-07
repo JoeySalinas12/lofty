@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const renameChat = document.getElementById('rename-chat');
   const todayChats = document.getElementById('today-chats');
   const sidebarUser = document.querySelector('.sidebar-user');
+  const loadingChat = document.getElementById('loading-chat');
+  const loadingSidebar = document.getElementById('loading-sidebar');
   
   // Add logout button
   const logoutButton = document.createElement('button');
@@ -47,6 +49,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await window.electronAPI.logout();
   });
 
+  // Add a small buffer before loading the chat to avoid flashing the placeholder content
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
   // Load chat history from Supabase
   await loadChatHistoryFromSupabase();
   
@@ -84,7 +89,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         console.log(`Processed ${Object.keys(chatHistory).length} valid conversations`);
         
-        // Update sidebar with chat history
+        // Update sidebar with chat history - remove loading indicator first
+        if (loadingSidebar && loadingSidebar.parentNode) {
+          loadingSidebar.parentNode.removeChild(loadingSidebar);
+        }
         updateChatSidebar();
         
         // Load the first chat or create a new one if none exists
@@ -98,13 +106,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } else if (result.error) {
         console.error('Error loading chat history:', result.error);
+        
+        // Remove loading indicators
+        if (loadingSidebar && loadingSidebar.parentNode) {
+          loadingSidebar.parentNode.removeChild(loadingSidebar);
+        }
+        if (loadingChat && loadingChat.parentNode) {
+          loadingChat.parentNode.removeChild(loadingChat);
+        }
+        
         createNewChat();
       } else {
         console.log("No conversations returned, creating a new chat");
+        
+        // Remove loading indicators
+        if (loadingSidebar && loadingSidebar.parentNode) {
+          loadingSidebar.parentNode.removeChild(loadingSidebar);
+        }
+        if (loadingChat && loadingChat.parentNode) {
+          loadingChat.parentNode.removeChild(loadingChat);
+        }
+        
         createNewChat();
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
+      
+      // Remove loading indicators
+      if (loadingSidebar && loadingSidebar.parentNode) {
+        loadingSidebar.parentNode.removeChild(loadingSidebar);
+      }
+      if (loadingChat && loadingChat.parentNode) {
+        loadingChat.parentNode.removeChild(loadingChat);
+      }
+      
       createNewChat();
     }
   }
@@ -138,8 +173,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Function to update the sidebar with chat history
   function updateChatSidebar() {
-    // Clear existing chats
-    todayChats.innerHTML = '';
+    // Clear existing chats (except loading indicator)
+    const existingChats = todayChats.querySelectorAll('.sidebar-item:not(#loading-sidebar)');
+    existingChats.forEach(item => item.remove());
     
     // Sort chats by creation date (newest first)
     const sortedChatIds = Object.keys(chatHistory).sort((a, b) => {
@@ -186,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Function to set up event listeners for chat history items
   function setupChatItemListeners() {
-    const chatHistoryItems = document.querySelectorAll('.sidebar-item');
+    const chatHistoryItems = document.querySelectorAll('.sidebar-item:not(#loading-sidebar)');
     chatHistoryItems.forEach(item => {
       item.addEventListener('click', (event) => {
         const chatId = event.currentTarget.dataset.chatId;
@@ -340,6 +376,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Function to load a specific chat
   function loadChat(chatId) {
+    // Remove loading indicator if it exists
+    if (loadingChat && loadingChat.parentNode) {
+      loadingChat.parentNode.removeChild(loadingChat);
+    }
+    
     // Update current chat ID
     currentChatId = chatId;
     
@@ -347,10 +388,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.sidebar-item').forEach(item => {
       item.classList.remove('active');
     });
-    document.querySelector(`[data-chat-id="${chatId}"]`).classList.add('active');
+    
+    const activeChatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
+    if (activeChatItem) {
+      activeChatItem.classList.add('active');
+    }
     
     // Get chat data
     const chat = chatHistory[chatId];
+    if (!chat) return;
     
     // Update title
     currentChatTitle.textContent = chat.title;
@@ -361,6 +407,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Clear and update chat messages
     chatMessages.innerHTML = '';
+    
+    // Add the fade-in class for smooth transition
+    chatMessages.classList.add('fade-in');
+    
+    // Populate with messages
     chat.messages.forEach(message => {
       appendMessage(message.type, message.content);
     });
@@ -370,6 +421,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Send IPC message to main process
     window.electronAPI.loadChat(chatId);
+    
+    // Remove the fade-in class after animation completes
+    setTimeout(() => {
+      chatMessages.classList.remove('fade-in');
+    }, 500);
   }
   
   // Function to map app modes to LLM models

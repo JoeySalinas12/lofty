@@ -19,7 +19,8 @@
       <div class="sidebar-section">
         <div class="section-title">Today</div>
         <div class="chat-history" id="today-chats">
-          <div class="sidebar-item active" data-chat-id="chat-1">New Chat</div>
+          <!-- Chat history will be populated dynamically -->
+          <div id="loading-sidebar" class="sidebar-item">Loading...</div>
         </div>
       </div>
       <div class="sidebar-user">
@@ -46,15 +47,10 @@
       </div>
       
       <div class="chat-container" id="chat-messages">
-        <div class="message user-message">
-          <div class="message-content">
-            Installing it globally for npm did not work, but using npx did. Thank you!
-          </div>
-        </div>
-        <div class="message bot-message">
-          <div class="message-content">
-            You're welcome! 🎉 npx is a lifesaver for running packages without global installs. Let me know if you need any help setting up your Electron app. Happy coding! 🚀🔧
-          </div>
+        <!-- Loading state shown initially, will be replaced with actual chat content -->
+        <div id="loading-chat" class="loading-container">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Loading your conversation...</div>
         </div>
       </div>
       
