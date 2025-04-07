@@ -30,6 +30,46 @@ body {
   display: inline-block;
 }
 
+/* Sparkle animation */
+@keyframes sparkle {
+  0% {
+    background-position: 0% 50%;
+    opacity: 0.7;
+  }
+  25% {
+    opacity: 1;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 0.7;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    background-position: 0% 50%;
+    opacity: 0.7;
+  }
+}
+
+/* Class to apply the sparkle animation */
+.sparkle-effect {
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c, #4a76a8);
+  background-size: 300% 100%;
+  animation: sparkle 2.5s ease infinite; /* Slowed down to 4 seconds */
+}
+
+/* Applied to text elements */
+.text-sparkle-effect {
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c, #4a76a8);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sparkle 4s ease infinite; /* Slowed down to 4 seconds */
+  transition: all 0.5s ease; /* Smoother transition */
+}
+
 /* Drag region for window movement */
 .drag-region {
   position: absolute;

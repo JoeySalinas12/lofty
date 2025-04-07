@@ -616,6 +616,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function updateUIForMode(mode) {
     const container = document.querySelector('.container');
     const logoText = document.getElementById('logo-text');
+    const modeSelectorContainer = document.querySelector('.mode-selector-container');
     
     // Reset classes
     container.classList.remove('mode-reasoning', 'mode-math', 'mode-programming');
@@ -638,6 +639,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       default:
         logoText.textContent = 'ChatGPT';
     }
+    
+    // Add sparkle effect to the logo and mode selector only
+    // First remove any existing sparkle classes to reset animations
+    logoText.classList.remove('text-sparkle-effect');
+    if (modeSelectorContainer.classList.contains('sparkle-active')) {
+      modeSelectorContainer.classList.remove('sparkle-active');
+    }
+    
+    // Add the sparkle effect with a slight delay to allow for any transitions
+    setTimeout(() => {
+      // Force a reflow to restart animation
+      void logoText.offsetWidth;
+      void modeSelectorContainer.offsetWidth;
+      
+      // Add the sparkle effects - but NOT to the chat title
+      logoText.classList.add('text-sparkle-effect');
+      modeSelectorContainer.classList.add('sparkle-active');
+      
+      // Remove the effect after the animation completes (increased to match new animation duration)
+      setTimeout(() => {
+        logoText.classList.remove('text-sparkle-effect');
+        modeSelectorContainer.classList.remove('sparkle-active');
+      }, 8000); // Animation visible for 8 seconds (2 full cycles of the 4-second animation)
+    }, 100); // Slightly increased delay
     
     // Update input placeholder based on mode
     switch (mode) {
