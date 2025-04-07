@@ -8,14 +8,17 @@
 body {
   height: 100vh;
   overflow: hidden;
+  /* Add background image or gradient for transparency to be visible */
+  background: linear-gradient(135deg, #222, #333);
 }
 
 .container {
   display: flex;
   height: 100vh;
-  background-color: #1e1e1e;
+  background-color: rgba(30, 30, 30, 0.7); /* Make the container slightly transparent */
   color: #ffffff;
   position: relative;
+  backdrop-filter: blur(10px); /* Add a blur effect to the entire container */
 }
 
 /* Drag region for window movement */
@@ -32,13 +35,15 @@ body {
 /* Sidebar styles */
 .sidebar {
   width: 250px;
-  background-color: #2a2a2a;
+  background-color: rgba(42, 42, 42, 0.8); /* More transparent background */
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #383838;
+  border-right: 1px solid rgba(56, 56, 56, 0.5);
   padding-top: 30px; /* Add space for the drag region */
   position: relative; /* For positioning fixed elements */
   height: 100vh; /* Full height */
+  backdrop-filter: blur(5px); /* Apply blur effect for background */
+  -webkit-backdrop-filter: blur(5px); /* For Safari */
 }
 
 /* You can add this to your styles.css file */
@@ -68,8 +73,8 @@ body {
 
 #new-chat-btn {
   width: 100%;
-  background-color: #3a3a3a;
-  border: 1px solid #484848;
+  background-color: rgba(58, 58, 58, 0.9);
+  border: 1px solid rgba(72, 72, 72, 0.5);
   color: white;
   padding: 8px 0;
   border-radius: 4px;
@@ -78,7 +83,7 @@ body {
 }
 
 #new-chat-btn:hover {
-  background-color: #484848;
+  background-color: rgba(72, 72, 72, 0.9);
 }
 
 .sidebar-items {
@@ -96,14 +101,15 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+  background-color: rgba(58, 58, 58, 0.2); /* Very subtle background */
 }
 
 .sidebar-item.active {
-  background-color: #3a3a3a;
+  background-color: rgba(58, 58, 58, 0.6);
 }
 
 .sidebar-item:hover {
-  background-color: #353535;
+  background-color: rgba(53, 53, 53, 0.4);
 }
 
 /* Sidebar content area (all except user profile) */
@@ -135,25 +141,44 @@ body {
   padding-bottom: 15px; /* Add some space at the bottom */
 }
 
+/* Custom scrollbar for chat history */
+.chat-history::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-history::-webkit-scrollbar-track {
+  background: rgba(65, 65, 65, 0.1);
+  border-radius: 4px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.chat-history::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
 /* Fix user profile at the bottom */
 .sidebar-user {
   padding: 15px 20px;
   display: flex;
   align-items: center;
-  border-top: 1px solid #383838;
+  border-top: 1px solid rgba(56, 56, 56, 0.7);
   cursor: pointer; /* Add cursor pointer to indicate it's clickable */
   position: absolute; /* Position fixed at the bottom */
   bottom: 0;
   left: 0;
   width: 100%;
-  background-color: #2a2a2a; /* Same as sidebar background */
+  background-color: rgba(42, 42, 42, 0.9); /* Same as sidebar background but more opaque */
   transition: background-color 0.2s;
   height: 60px; /* Fixed height */
   z-index: 10; /* Ensure it's above other content */
 }
 
 .sidebar-user:hover {
-  background-color: #333333;
+  background-color: rgba(51, 51, 51, 0.95);
 }
 
 .user-avatar {
@@ -173,8 +198,8 @@ body {
   bottom: 100%; /* Position above the user area */
   left: 0;
   width: 100%;
-  background-color: #3a3a3a;
-  border: 1px solid #484848;
+  background-color: rgba(58, 58, 58, 0.95);
+  border: 1px solid rgba(72, 72, 72, 0.8);
   border-radius: 4px;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
   overflow: hidden;
@@ -198,7 +223,7 @@ body {
 }
 
 .popup-item:hover {
-  background-color: #444;
+  background-color: rgba(68, 68, 68, 0.8);
 }
 
 .popup-item i {
@@ -214,6 +239,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   padding-top: 30px; /* Add space for the drag region */
+  background-color: rgba(30, 30, 30, 0.95); /* Slightly more opaque than container */
 }
 
 /* Window header for controls */
@@ -233,7 +259,9 @@ body {
 /* Mode selector */
 .mode-selector-container {
   padding: 10px 20px;
-  border-bottom: 1px solid #383838;
+  border-bottom-width: 3px; /* Make the border slightly thicker */
+  border-bottom-style: solid;
+  border-bottom-color: #383838;
 }
 
 .mode-selector {
@@ -241,9 +269,9 @@ body {
 }
 
 #mode-dropdown {
-  background-color: #3a3a3a;
+  background-color: rgba(58, 58, 58, 0.9);
   color: white;
-  border: 1px solid #484848;
+  border: 1px solid rgba(72, 72, 72, 0.8);
   padding: 8px 15px;
   border-radius: 4px;
   cursor: pointer;
@@ -273,6 +301,25 @@ body {
   flex-direction: column;
 }
 
+/* Custom scrollbar for chat container */
+.chat-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+  background: rgba(65, 65, 65, 0.1);
+  border-radius: 4px;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
 .message {
   margin-bottom: 20px;
   max-width: 80%;
@@ -282,12 +329,12 @@ body {
 
 .user-message {
   align-self: flex-end;
-  background-color: #444654;
+  background-color: rgba(68, 70, 84, 0.95);
 }
 
 .bot-message {
   align-self: flex-start;
-  background-color: #343541;
+  background-color: rgba(52, 53, 65, 0.95);
 }
 
 .message-content {
@@ -297,13 +344,13 @@ body {
 /* Input area styles */
 .input-area {
   padding: 20px;
-  border-top: 1px solid #383838;
+  border-top: none; /* Remove the thin line above chat box */
 }
 
 .message-input {
   display: flex;
   align-items: center;
-  background-color: #3a3a3a;
+  background-color: rgba(58, 58, 58, 0.9);
   border-radius: 8px;
   padding: 8px 15px;
 }
@@ -346,8 +393,8 @@ body {
 .context-menu {
   display: none;
   position: absolute;
-  background-color: #383838;
-  border: 1px solid #484848;
+  background-color: rgba(56, 56, 56, 0.95);
+  border: 1px solid rgba(72, 72, 72, 0.8);
   border-radius: 4px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   z-index: 1000;
@@ -361,7 +408,7 @@ body {
 }
 
 .context-menu-item:hover {
-  background-color: #444;
+  background-color: rgba(68, 68, 68, 0.8);
 }
 
 /* Loading styles */
@@ -376,7 +423,7 @@ body {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #3a3a3a;
+  border: 3px solid rgba(58, 58, 58, 0.8);
   border-top: 3px solid #4a76a8;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -395,7 +442,7 @@ body {
 
 /* New loading chat message style */
 .message.bot-message.loading {
-  background-color: #2e2e37;
+  background-color: rgba(46, 46, 55, 0.9);
 }
 
 .message.bot-message.loading .message-content {

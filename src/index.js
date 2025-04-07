@@ -59,10 +59,12 @@ const createMainWindow = () => {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    backgroundColor: '#1e1e1e', // Dark background like in the image
-    titleBarStyle: 'hiddenInset', // For macOS to have a native-looking title bar
-    autoHideMenuBar: true, // Hide the default menu bar
-    frame: false, // Use a frameless window
+    backgroundColor: 'rgba(30, 30, 30, 0.85)', // Change to rgba with transparency
+    titleBarStyle: 'hiddenInset',
+    autoHideMenuBar: true,
+    frame: false,
+    transparent: true, // This is required for transparency
+    vibrancy: 'under-window', // Only works on macOS
   });
 
   // Load the index.html file
