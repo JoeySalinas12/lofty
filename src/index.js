@@ -108,7 +108,8 @@ const createSettingsWindow = () => {
     return;
   }
   
-  settingsWindow = new BrowserWindow({
+  // Base window options
+  const windowOptions = {
     width: 700,
     height: 650,
     webPreferences: {
@@ -117,13 +118,30 @@ const createSettingsWindow = () => {
       preload: path.join(__dirname, 'preload.js')
     },
     backgroundColor: '#1e1e1e',
-    titleBarStyle: 'hiddenInset',
-    autoHideMenuBar: true,
-    frame: false,
-    resizable: false,
     parent: mainWindow,
     modal: process.platform !== 'darwin', // Modal on Windows/Linux, non-modal on macOS
-  });
+  };
+
+  // Platform-specific settings
+  if (process.platform === 'darwin') {
+    // On macOS - enable native frame but with custom styling
+    windowOptions.titleBarStyle = 'hiddenInset';
+    windowOptions.trafficLightPosition = { x: 10, y: 10 }; // Adjust traffic light position
+    windowOptions.vibrancy = 'under-window'; // Add vibrancy effect
+    windowOptions.frame = true; // Use native frame
+  } else {
+    // On Windows/Linux - use frameless with custom controls
+    windowOptions.frame = false;
+    windowOptions.autoHideMenuBar = true;
+  }
+  
+  settingsWindow = new BrowserWindow(windowOptions);
+  
+  // Explicitly set draggable behavior for macOS
+  if (process.platform === 'darwin') {
+    // Set the whole window to be draggable
+    settingsWindow.setMovable(true);
+  }
   
   // Load the settings HTML file
   settingsWindow.loadFile(path.join(__dirname, 'settings.html'));
@@ -134,6 +152,14 @@ const createSettingsWindow = () => {
   // Clean up when window is closed
   settingsWindow.on('closed', () => {
     settingsWindow = null;
+  });
+  
+  // Handle window control events specifically for the settings window
+  settingsWindow.on('blur', () => {
+    // Re-enable dragging when window loses focus
+    if (process.platform === 'darwin') {
+      settingsWindow.setMovable(true);
+    }
   });
 };
 

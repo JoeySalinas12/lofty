@@ -9,7 +9,27 @@
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   overflow: hidden;
+  position: relative; /* Ensure proper positioning for the drag region */
 }
+
+/* Add an explicit drag region for the window */
+.settings-drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px; /* Match title bar height */
+  -webkit-app-region: drag;
+  z-index: 10000;
+  /* Optional: Add background color to match title bar exactly */
+  background-color: #2a2a2a; /* Match your title bar color */
+  /* Optional: Match any border radius at the top */
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  /* Optional: Make the drag region visually invisible while still functional */
+  opacity: 0;
+}
+
 
 .settings-container {
   width: 100%;
@@ -23,6 +43,7 @@
   flex-direction: column;
   animation: fadeIn 0.5s ease-out;
   position: relative;
+  z-index: 1; /* Lower than the drag region */
 }
 
 @keyframes fadeIn {
@@ -34,8 +55,9 @@
   padding: 20px;
   border-bottom: 1px solid #383838;
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Center the title since we removed the close button */
   align-items: center;
+  -webkit-app-region: drag; /* Make the header draggable as well */
 }
 
 .settings-title {
@@ -49,21 +71,10 @@
   background-clip: text;
   color: transparent;
   display: inline-block;
+  -webkit-app-region: no-drag; /* Make sure the text can be selected */
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: #999999;
-  font-size: 24px;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.close-btn:hover {
-  color: #ffffff;
-}
-
+/* Rest of the styles remain the same */
 .settings-sections {
   flex: 1;
   padding: 20px;
@@ -228,4 +239,11 @@
 
 .form-group input.invalid {
   border-color: #ff6b6b;
+}
+
+/* Adjust for macOS titlebar area */
+@media screen and (min-width: 0\0) {
+  .settings-header {
+    padding-top: 30px; /* Provide space for native traffic lights on macOS */
+  }
 }

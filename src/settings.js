@@ -1,7 +1,7 @@
 // Settings page functionality
 document.addEventListener('DOMContentLoaded', async () => {
   // Get UI elements
-  const closeSettingsBtn = document.getElementById('close-settings-btn');
+  // Remove the close settings button reference since we've removed it from the HTML
   const apiKeysForm = document.getElementById('api-keys-form');
   const modelConfigForm = document.getElementById('model-config-form');
   const saveApiKeysBtn = document.getElementById('save-api-keys-btn');
@@ -28,10 +28,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load existing settings when the page loads
   await loadSettings();
   
-  // Close settings window and go back to main window
-  closeSettingsBtn.addEventListener('click', () => {
-    window.electronAPI.closeSettingsWindow();
-  });
+  // Remove the close button event listener since we removed the button
+  // Now using native window controls
   
   // Save API keys
   apiKeysForm.addEventListener('submit', async (e) => {
