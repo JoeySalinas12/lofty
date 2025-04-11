@@ -3,6 +3,8 @@ const path = require('path');
 const LLMBridge = require('./llm-bridge');
 const authService = require('./auth-service');
 const chatService = require('./chat-service');
+const keyStoreService = require('./key-store-service');
+const notificationService = require('./notification-service');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) {
@@ -12,6 +14,7 @@ if (require('electron-squirrel-startup')) {
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow;
 let authWindow;
+let settingsWindow;
 
 // Check if user is authenticated and show appropriate window
 const createAuthWindow = () => {
@@ -77,6 +80,7 @@ const createMainWindow = () => {
   ipcMain.on('window-minimize', () => {
     if (mainWindow) mainWindow.minimize();
     if (authWindow) authWindow.minimize();
+    if (settingsWindow) settingsWindow.minimize();
   });
   
   ipcMain.on('window-maximize', () => {
@@ -92,6 +96,44 @@ const createMainWindow = () => {
   ipcMain.on('window-close', () => {
     if (mainWindow) mainWindow.close();
     if (authWindow) authWindow.close();
+    if (settingsWindow) settingsWindow.close();
+  });
+};
+
+// Create settings window
+const createSettingsWindow = () => {
+  // Create the settings window if it doesn't exist
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+  
+  settingsWindow = new BrowserWindow({
+    width: 700,
+    height: 650,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    },
+    backgroundColor: '#1e1e1e',
+    titleBarStyle: 'hiddenInset',
+    autoHideMenuBar: true,
+    frame: false,
+    resizable: false,
+    parent: mainWindow,
+    modal: process.platform !== 'darwin', // Modal on Windows/Linux, non-modal on macOS
+  });
+  
+  // Load the settings HTML file
+  settingsWindow.loadFile(path.join(__dirname, 'settings.html'));
+  
+  // For development/debugging
+  // settingsWindow.webContents.openDevTools();
+  
+  // Clean up when window is closed
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
   });
 };
 
@@ -110,6 +152,7 @@ app.on('ready', async () => {
   // Set up authentication IPC handlers
   setupAuthHandlers();
   setupChatHandlers();
+  setupSettingsHandlers();
 });
 
 // Quit when all windows are closed, except on macOS
@@ -197,11 +240,13 @@ function setupAuthHandlers() {
 }
 
 function setupChatHandlers() {
-  // Handle LLM queries - this needs to use invoke/handle for async responses
+  // Handle LLM queries - updated to use stored API keys
   ipcMain.handle('query-llm', async (event, model, prompt, chatId) => {
     console.log(`Querying ${model} with prompt: ${prompt} for chat: ${chatId}`);
     try {
-      const response = await LLMBridge.queryLLM(model, prompt);
+      // Pass the API keys to the LLM bridge
+      const apiKeys = await keyStoreService.exportKeysToEnv();
+      const response = await LLMBridge.queryLLM(model, prompt, apiKeys);
       
       // Save the message exchange to Supabase
       if (authService.isAuthenticated()) {
@@ -257,6 +302,104 @@ function setupChatHandlers() {
   ipcMain.on('mode-changed', (event, mode) => {
     console.log(`Mode changed to: ${mode}`);
   });
+  
+  // Handle getting model for mode
+  ipcMain.handle('get-mode-model', async (event, mode) => {
+    try {
+      const modelConfig = await keyStoreService.getModelConfig();
+      return modelConfig[mode] || getDefaultModel(mode);
+    } catch (error) {
+      console.error('Error getting model for mode:', error);
+      return getDefaultModel(mode);
+    }
+  });
 }
 
-// Removed duplicated code
+function setupSettingsHandlers() {
+  // Open settings window
+  ipcMain.on('open-settings', () => {
+    createSettingsWindow();
+  });
+  
+  // Close settings window
+  ipcMain.on('close-settings', () => {
+    if (settingsWindow) {
+      settingsWindow.close();
+      settingsWindow = null;
+    }
+  });
+  
+  // Save API keys
+  ipcMain.handle('save-api-keys', async (event, keys) => {
+    try {
+      const result = await keyStoreService.saveApiKeys(keys);
+      
+      // Notify all windows about the API key change
+      if (result) {
+        notificationService.notifyApiKeysChanged();
+      }
+      
+      return { success: result };
+    } catch (error) {
+      console.error('Error saving API keys:', error);
+      return { success: false, error: error.message };
+    }
+  });
+  
+  // Get API keys
+  ipcMain.handle('get-api-keys', async () => {
+    try {
+      return await keyStoreService.getApiKeys();
+    } catch (error) {
+      console.error('Error getting API keys:', error);
+      return { openai: '', anthropic: '', gemini: '' };
+    }
+  });
+  
+  // Save model configuration
+  ipcMain.handle('save-model-config', async (event, config) => {
+    try {
+      const result = await keyStoreService.saveModelConfig(config);
+      
+      // Notify all windows about the model config change
+      if (result) {
+        notificationService.notifyModelConfigChanged();
+      }
+      
+      return { success: result };
+    } catch (error) {
+      console.error('Error saving model configuration:', error);
+      return { success: false, error: error.message };
+    }
+  });
+  
+  // Get model configuration
+  ipcMain.handle('get-model-config', async () => {
+    try {
+      return await keyStoreService.getModelConfig();
+    } catch (error) {
+      console.error('Error getting model configuration:', error);
+      return getDefaultModelConfig();
+    }
+  });
+}
+
+// Helper function to get default model for a mode
+function getDefaultModel(mode) {
+  const defaults = {
+    'reasoning': 'claude',
+    'math': 'gemini',
+    'programming': 'gpt'
+  };
+  
+  return defaults[mode] || 'claude';
+}
+
+// Helper function to get default model configuration
+function getDefaultModelConfig() {
+  return {
+    reasoning: 'claude',
+    math: 'gemini',
+    programming: 'gpt'
+  };
+}

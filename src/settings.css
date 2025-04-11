@@ -1,0 +1,231 @@
+/* Settings page specific styles */
+.settings-page {
+  background-color: #1e1e1e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  overflow: hidden;
+}
+
+.settings-container {
+  width: 100%;
+  max-width: 700px;
+  height: 90vh;
+  max-height: 700px;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.5s ease-out;
+  position: relative;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-header {
+  padding: 20px;
+  border-bottom: 1px solid #383838;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-title {
+  color: #ffffff;
+  font-size: 24px;
+  margin: 0;
+  font-weight: 600;
+  /* Rainbow gradient for title */
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #999999;
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #ffffff;
+}
+
+.settings-sections {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.settings-section {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #383838;
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+}
+
+.section-header {
+  color: #dddddd;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.section-description {
+  color: #999999;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #dddddd;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  background-color: #3a3a3a;
+  border: 1px solid #484848;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #4a76a8;
+  box-shadow: 0 0 0 2px rgba(74, 118, 168, 0.2);
+}
+
+.input-with-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-toggle input {
+  padding-right: 40px;
+}
+
+.toggle-visibility {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #777;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-visibility:hover {
+  color: #aaa;
+}
+
+.api-key-status {
+  display: block;
+  font-size: 12px;
+  height: 16px;
+  margin-top: 5px;
+}
+
+.form-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-button {
+  background-color: #4a76a8;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.settings-button:hover {
+  background-color: #3d639e;
+}
+
+.settings-button:active {
+  transform: scale(0.98);
+}
+
+/* Settings footer */
+.settings-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #383838;
+  text-align: center;
+}
+
+.version-info {
+  color: #777;
+  font-size: 12px;
+}
+
+/* Custom scrollbar for settings */
+.settings-sections::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-sections::-webkit-scrollbar-track {
+  background: rgba(65, 65, 65, 0.1);
+  border-radius: 4px;
+}
+
+.settings-sections::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.settings-sections::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Success and error states */
+.api-key-status.success {
+  color: #4CAF50;
+}
+
+.api-key-status.error {
+  color: #ff6b6b;
+}
+
+/* Input validation states */
+.form-group input.valid {
+  border-color: #4CAF50;
+}
+
+.form-group input.invalid {
+  border-color: #ff6b6b;
+}

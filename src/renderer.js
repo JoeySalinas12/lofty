@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   let chatHistory = {};
   let currentChatId = null;
   let contextMenuTargetId = null;
+  
+  // Store model configuration - loaded from settings
+  let modelConfig = null;
 
   // Get UI elements
   const modeDropdown = document.getElementById('mode-dropdown');
@@ -32,7 +35,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loadingSidebar = document.getElementById('loading-sidebar');
   const userPopup = document.getElementById('user-popup');
   const logoutBtn = document.getElementById('logout-btn');
+  const settingsBtn = document.getElementById('settings-btn');
   const userProfile = document.getElementById('user-profile');
+  
+  // Load model configuration
+  await loadModelConfig();
   
   // Set up user popup toggle
   userProfile.addEventListener('click', (event) => {
@@ -58,6 +65,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   logoutBtn.addEventListener('click', async () => {
     await window.electronAPI.logout();
   });
+  
+  // Set up settings handler
+  settingsBtn.addEventListener('click', () => {
+    window.electronAPI.openSettings();
+    userPopup.style.display = 'none';
+  });
 
   // Add a small buffer before loading the chat to avoid flashing the placeholder content
   await new Promise(resolve => setTimeout(resolve, 300));
@@ -67,6 +80,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Setup event listeners for chat items
   setupChatItemListeners();
+  
+  // Function to load model configuration
+  async function loadModelConfig() {
+    try {
+      modelConfig = await window.electronAPI.getModelConfig();
+      console.log('Model configuration loaded:', modelConfig);
+    } catch (error) {
+      console.error('Error loading model configuration:', error);
+      modelConfig = {
+        reasoning: 'claude',
+        math: 'gemini',
+        programming: 'gpt'
+      };
+    }
+  }
   
   // Function to load chat history from Supabase
   async function loadChatHistoryFromSupabase() {
@@ -439,15 +467,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   // Function to map app modes to LLM models
-  function getModeModel(mode) {
-    // Map the app mode to specific LLM models
-    const modeToModel = {
-      'reasoning': 'claude', // Use Claude for reasoning
-      'math': 'gemini',      // Use Gemini for math
-      'programming': 'gpt'   // Use GPT for programming
-    };
-    
-    return modeToModel[mode] || 'claude'; // Default to Claude if mode not found
+  async function getModeModel(mode) {
+    try {
+      // Get model from settings
+      return await window.electronAPI.getModeModel(mode);
+    } catch (error) {
+      console.error('Error getting model for mode:', error);
+      
+      // Use local model config or fallback defaults
+      if (modelConfig && modelConfig[mode]) {
+        return modelConfig[mode];
+      }
+      
+      // Fallback defaults
+      const defaultModels = {
+        'reasoning': 'claude',
+        'math': 'gemini',
+        'programming': 'gpt'
+      };
+      
+      return defaultModels[mode] || 'claude';
+    }
   }
   
   // Function to send a new message
@@ -483,7 +523,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       // Get the appropriate model based on the current mode
       const currentMode = chatHistory[currentChatId].mode;
-      const modelToUse = getModeModel(currentMode);
+      const modelToUse = await getModeModel(currentMode);
       
       // Query the LLM through the IPC bridge
       const botResponse = await window.electronAPI.queryLLM(modelToUse, messageText, currentChatId);
@@ -614,8 +654,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   // Function to update UI based on the selected mode
-  // Function to update UI based on the selected mode
-  function updateUIForMode(mode) {
+  async function updateUIForMode(mode) {
     const container = document.querySelector('.container');
     const logoText = document.getElementById('logo-text');
     const modeSelectorContainer = document.querySelector('.mode-selector-container');
@@ -627,7 +666,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     container.classList.add(`mode-${mode}`);
 
     // Update logo text based on the current model but keep rainbow gradient
-    const currentModel = getModeModel(mode);
+    // Get the model for this mode from the settings
+    const currentModel = await getModeModel(mode);
+    
     switch (currentModel) {
       case 'claude':
         logoText.textContent = 'Claude';
@@ -667,18 +708,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 100); // Slightly increased delay
     
     // Update input placeholder based on mode - use format from the image
-    switch (mode) {
-      case 'reasoning':
+    switch (currentModel) {
+      case 'claude':
         messageInput.placeholder = 'Message Claude';
         break;
-      case 'math':
+      case 'gemini':
         messageInput.placeholder = 'Message Gemini';
         break;
-      case 'programming':
+      case 'gpt':
         messageInput.placeholder = 'Message ChatGPT';
         break;
       default:
         messageInput.placeholder = 'Message ChatGPT';
     }
   }
+  
+  // Listen for API key changes
+  // This approach allows settings changes to be reflected immediately in the current window
+  window.addEventListener('storage', async (event) => {
+    if (event.key === 'lofty_model_config_updated') {
+      console.log('Model configuration changed, reloading...');
+      await loadModelConfig();
+      
+      // Update UI for current mode
+      if (currentChatId && chatHistory[currentChatId]) {
+        updateUIForMode(chatHistory[currentChatId].mode);
+      }
+    }
   });
+});

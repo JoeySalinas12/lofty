@@ -14,14 +14,30 @@ def query_llm(model, prompt):
         # Route to the appropriate model query function
         if "gpt" in model.lower():
             response = query_chat(prompt)
-            return response["choices"][0]["message"]["content"]
+            if isinstance(response, dict) and "error" in response:
+                return response["error"]
+            elif isinstance(response, dict) and "choices" in response:
+                return response["choices"][0]["message"]["content"]
+            else:
+                return f"Error: Unexpected response format from GPT"
+                
         elif "claude" in model.lower():
-            return query_claude(prompt)
+            response = query_claude(prompt)
+            # Claude already returns a string
+            return response
+            
         elif "gemini" in model.lower():
             response = query_gemini(prompt)
-            return response["candidates"][0]["content"]["parts"][0]["text"]
+            if isinstance(response, dict) and "error" in response:
+                return response["error"]
+            elif isinstance(response, dict) and "candidates" in response:
+                return response["candidates"][0]["content"]["parts"][0]["text"]
+            else:
+                return f"Error: Unexpected response format from Gemini"
+                
         else:
             return f"Error: Unsupported model '{model}'"
+            
     except Exception as e:
         return f"Error querying {model}: {str(e)}"
 

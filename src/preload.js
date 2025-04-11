@@ -24,5 +24,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Chat history
   getChatHistory: () => ipcRenderer.invoke('get-chat-history'),
-  saveChat: (chatId, chatData) => ipcRenderer.invoke('save-chat', chatId, chatData)
+  saveChat: (chatId, chatData) => ipcRenderer.invoke('save-chat', chatId, chatData),
+  
+  // Settings functionality
+  openSettings: () => ipcRenderer.send('open-settings'),
+  closeSettingsWindow: () => ipcRenderer.send('close-settings'),
+  
+  // API key management
+  saveApiKeys: (keys) => ipcRenderer.invoke('save-api-keys', keys),
+  getApiKeys: () => ipcRenderer.invoke('get-api-keys'),
+  
+  // Model configuration
+  saveModelConfig: (config) => ipcRenderer.invoke('save-model-config', config),
+  getModelConfig: () => ipcRenderer.invoke('get-model-config'),
+  getModeModel: (mode) => ipcRenderer.invoke('get-mode-model', mode)
 });

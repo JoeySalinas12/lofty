@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lofty - Settings</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body class="settings-page">
+  <div class="settings-container">
+    <div class="settings-header">
+      <h1 class="settings-title">Settings</h1>
+      <button id="close-settings-btn" class="close-btn">×</button>
+    </div>
+
+    <div class="settings-sections">
+      <div class="settings-section">
+        <h2 class="section-header">API Keys</h2>
+        <p class="section-description">Configure your API keys for each AI model. These keys are stored locally on your device.</p>
+        
+        <form id="api-keys-form">
+          <div class="form-group">
+            <label for="openai-key">OpenAI API Key (GPT-4)</label>
+            <div class="input-with-toggle">
+              <input type="password" id="openai-key" placeholder="sk-..." autocomplete="off">
+              <button type="button" class="toggle-visibility" data-for="openai-key">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="api-key-status" id="openai-key-status"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="anthropic-key">Anthropic API Key (Claude)</label>
+            <div class="input-with-toggle">
+              <input type="password" id="anthropic-key" placeholder="sk-ant-..." autocomplete="off">
+              <button type="button" class="toggle-visibility" data-for="anthropic-key">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="api-key-status" id="anthropic-key-status"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="gemini-key">Google API Key (Gemini)</label>
+            <div class="input-with-toggle">
+              <input type="password" id="gemini-key" placeholder="AIza..." autocomplete="off">
+              <button type="button" class="toggle-visibility" data-for="gemini-key">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="api-key-status" id="gemini-key-status"></span>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="save-api-keys-btn" class="settings-button">Save API Keys</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="settings-section">
+        <h2 class="section-header">Model Configuration</h2>
+        <p class="section-description">Configure which models to use for each mode.</p>
+        
+        <form id="model-config-form">
+          <div class="form-group">
+            <label for="reasoning-model">Reasoning Mode</label>
+            <select id="reasoning-model">
+              <option value="claude">Claude (Anthropic)</option>
+              <option value="gpt">GPT-4 (OpenAI)</option>
+              <option value="gemini">Gemini (Google)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="math-model">Math Mode</label>
+            <select id="math-model">
+              <option value="gemini">Gemini (Google)</option>
+              <option value="gpt">GPT-4 (OpenAI)</option>
+              <option value="claude">Claude (Anthropic)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="programming-model">Programming Mode</label>
+            <select id="programming-model">
+              <option value="gpt">GPT-4 (OpenAI)</option>
+              <option value="claude">Claude (Anthropic)</option>
+              <option value="gemini">Gemini (Google)</option>
+            </select>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="save-model-config-btn" class="settings-button">Save Configuration</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="settings-footer">
+      <div class="version-info">Lofty v1.0.0</div>
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
