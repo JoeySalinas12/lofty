@@ -1,5 +1,8 @@
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', async () => {
+  // Import the MarkdownRenderer
+  const MarkdownRenderer = require('./markdown-renderer');
+  
   // First check if user is authenticated
   const isAuthenticated = await window.electronAPI.checkAuth();
   if (!isAuthenticated) {
@@ -412,7 +415,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Listen for new chat button click
   newChatButton.addEventListener('click', createNewChat);
   
-  // Function to load a specific chat
+  // Function to load a specific chat - UPDATED to handle rich text
   function loadChat(chatId) {
     // Remove loading indicator if it exists
     if (loadingChat && loadingChat.parentNode) {
@@ -449,9 +452,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add the fade-in class for smooth transition
     chatMessages.classList.add('fade-in');
     
-    // Populate with messages
+    // Populate with messages - now with rich text support
     chat.messages.forEach(message => {
-      appendMessage(message.type, message.content);
+      // Get model info for bot messages
+      let metadata = null;
+      if (message.type === 'bot' && message.model) {
+        metadata = getModelDisplayName(message.model);
+      }
+      
+      appendMessage(message.type, message.content, metadata);
     });
     
     // Scroll to bottom
@@ -489,8 +498,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       return defaultModels[mode] || 'claude';
     }
   }
+
+  // Helper function to get a display name for the model
+  function getModelDisplayName(model) {
+    const modelMap = {
+      'claude': 'Claude',
+      'gpt': 'GPT-4 Turbo',
+      'gemini': 'Gemini'
+    };
+    
+    return modelMap[model] || model;
+  }
   
-  // Function to send a new message
+  // Function to send a new message - UPDATED to include model info in metadata
   async function sendMessage() {
     const messageText = messageInput.value.trim();
     if (messageText === '') return;
@@ -531,8 +551,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Remove loading indicator
       chatMessages.removeChild(loadingMessage);
       
-      // Add the response to the UI
-      appendMessage('bot', botResponse);
+      // Format the model info for display
+      const modelInfo = getModelDisplayName(modelToUse);
+      
+      // Add the response to the UI - with model info as metadata
+      appendMessage('bot', botResponse, modelInfo);
       
       // Add the response to chat history
       chatHistory[currentChatId].messages.push({ 
@@ -621,21 +644,159 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatMessages.innerHTML = '';
     currentChatTitle.textContent = 'New Chat';
   }
+
+  // Function to process code blocks for better display
+  function processCodeBlocks(container) {
+    const codeBlocks = container.querySelectorAll('pre code');
+    
+    codeBlocks.forEach((codeBlock, index) => {
+      const pre = codeBlock.parentNode;
+      
+      // Create a wrapper div for the code block
+      const wrapper = document.createElement('div');
+      wrapper.className = 'code-block-wrapper';
+      
+      // Create a header for the code block
+      const header = document.createElement('div');
+      header.className = 'code-block-header';
+      
+      // Try to determine the language from the class
+      let language = 'plaintext';
+      codeBlock.classList.forEach(cls => {
+        if (cls.startsWith('language-') || cls.startsWith('lang-')) {
+          language = cls.replace('language-', '').replace('lang-', '');
+        }
+      });
+      
+      // Set header content
+      header.innerHTML = `
+        <span class="code-block-language">${language}</span>
+        <div class="code-block-actions">
+          <button class="copy-code-btn" data-index="${index}">Copy</button>
+        </div>
+      `;
+      
+      // Insert the wrapper and move elements
+      pre.parentNode.insertBefore(wrapper, pre);
+      wrapper.appendChild(header);
+      wrapper.appendChild(pre);
+      
+      // Add click event to copy button
+      const copyBtn = header.querySelector('.copy-code-btn');
+      copyBtn.addEventListener('click', () => {
+        const code = codeBlock.textContent;
+        navigator.clipboard.writeText(code).then(() => {
+          // Show "Copied!" temporarily
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = 'Copy';
+          }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy code:', err);
+        });
+      });
+    });
+  }
+
+  // Function to make links open in the default browser
+  function makeLinksExternal(container) {
+    const links = container.querySelectorAll('a');
+    
+    links.forEach(link => {
+      // Skip if it's an internal anchor link
+      if (link.getAttribute('href').startsWith('#')) return;
+      
+      // Set target to _blank for external links
+      link.setAttribute('target', '_blank');
+      
+      // Add click handler to open links in default browser
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const url = link.getAttribute('href');
+        
+        // Use Electron shell to open links in default browser
+        // This requires a bridge through IPC
+        window.electronAPI.openExternalLink(url);
+      });
+    });
+  }
+
+  // Setup collapsible elements like long code blocks
+  function setupCollapsibleElements(container) {
+    // Find all pre elements that might need collapsing
+    const preElements = container.querySelectorAll('pre');
+    
+    preElements.forEach(pre => {
+      // If the code block is very long, make it collapsible
+      if (pre.clientHeight > 400) {
+        pre.classList.add('collapsible');
+        pre.style.maxHeight = '400px';
+        pre.style.overflow = 'hidden';
+        
+        const expandBtn = document.createElement('button');
+        expandBtn.className = 'expand-code-btn';
+        expandBtn.textContent = 'Show more';
+        pre.parentNode.insertBefore(expandBtn, pre.nextSibling);
+        
+        expandBtn.addEventListener('click', () => {
+          if (pre.classList.contains('expanded')) {
+            pre.classList.remove('expanded');
+            pre.style.maxHeight = '400px';
+            expandBtn.textContent = 'Show more';
+            // Scroll back to make sure the start of the code block is visible
+            pre.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            pre.classList.add('expanded');
+            pre.style.maxHeight = 'none';
+            expandBtn.textContent = 'Show less';
+          }
+        });
+      }
+    });
+  }
   
-  // Function to append a message to the chat
-  function appendMessage(type, content) {
+  // Function to append a message to the chat - UPDATED for rich text support
+  function appendMessage(type, content, metadata = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}-message`;
     
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    contentDiv.textContent = content;
+    
+    // Check if content might contain markdown
+    if (type === 'bot' && MarkdownRenderer.containsMarkdown(content)) {
+      // Render markdown if it's a bot message that contains markdown
+      contentDiv.className += ' markdown-content';
+      contentDiv.innerHTML = MarkdownRenderer.render(content);
+      
+      // Process code blocks for syntax highlighting
+      processCodeBlocks(contentDiv);
+      
+      // Make links open in external browser
+      makeLinksExternal(contentDiv);
+    } else {
+      // Plain text for user messages or messages without markdown
+      contentDiv.textContent = content;
+    }
+    
     messageDiv.appendChild(contentDiv);
     
-    // Add to chat and scroll to bottom - without any sources or buttons
+    // Add metadata if provided (like model info)
+    if (metadata && type === 'bot') {
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'message-metadata';
+      metaDiv.textContent = metadata;
+      messageDiv.appendChild(metaDiv);
+    }
+    
+    // Add to chat and scroll to bottom
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Add event listener for collapsible elements like code blocks
+    setupCollapsibleElements(contentDiv);
   }
+
   
   // Function to update the chat title
   function updateChatTitle(chatId, newTitle) {

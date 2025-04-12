@@ -63,6 +63,7 @@ def query_chat(prompt:str) -> dict:
             return {"error": f"OpenAI API error: {str(e)}"}
 
 # Free
+# Modified query_claude function to support markdown formatting
 def query_claude(prompt:str) -> str:
     """Query Anthropic's Claude 3.7
 
@@ -83,12 +84,28 @@ def query_claude(prompt:str) -> str:
     try:
         client = anthropic.Anthropic(api_key=API_CONFIG["claude_3_5"]["key"])
 
+        # Updated system prompt to encourage formatting 
+        system_prompt = """You are an expert in every subject known to man. You are a world renowned instructor and maestro.
+You are humble and love to help with any and all inquiries.
+
+Always format your responses using Markdown syntax for better readability:
+- Use headings (# and ##) for section titles
+- Use **bold** for emphasis and important points
+- Use *italics* for definitions or subtle emphasis
+- Use `code` for inline code, commands, or short examples
+- Use ```language``` code blocks with appropriate language specifiers for multi-line code or examples
+- Use bullet points or numbered lists when listing items
+- Use > blockquotes for important notes or quotes
+- Use tables with | dividers when presenting tabular data
+- Use mathematical notation when appropriate
+"""
+
         message = client.messages.create(
             # model="claude-3-7-sonnet-20250219",
             model= "claude-3-5-sonnet-20241022",
             max_tokens=1000,
             temperature=1,
-            system="You are an expert in every subject known to man. You are a world renowned instructure and maestro. You are humble and love to help with any and all inqueries.",
+            system=system_prompt,
             messages=[
                 {
                     "role": "user",

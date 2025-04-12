@@ -1,0 +1,385 @@
+/* rich-text.css - Styling for markdown and rich text elements */
+
+/* Base styles for the markdown container */
+.markdown-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #f0f0f0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Headings */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #ffffff;
+}
+
+.markdown-content h1 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.markdown-content h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.markdown-content h3 {
+  font-size: 1.25em;
+}
+
+.markdown-content h4 {
+  font-size: 1.1em;
+}
+
+.markdown-content h5 {
+  font-size: 0.9em;
+}
+
+.markdown-content h6 {
+  font-size: 0.8em;
+  color: #b3b3b3;
+}
+
+/* Paragraph and spacing */
+.markdown-content p {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+/* Lists */
+.markdown-content ul,
+.markdown-content ol {
+  margin-top: 0.25em;
+  margin-bottom: 1em;
+  padding-left: 2em;
+}
+
+.markdown-content ul ul,
+.markdown-content ol ol,
+.markdown-content ul ol,
+.markdown-content ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-content li {
+  margin-bottom: 0.25em;
+}
+
+.markdown-content li > p {
+  margin-top: 0.75em;
+}
+
+/* Blockquotes */
+.markdown-content blockquote {
+  margin: 0.75em 0;
+  padding: 0 1em;
+  color: #b3b3b3;
+  border-left: 0.25em solid rgba(138, 74, 168, 0.5);
+}
+
+.markdown-content blockquote > :first-child {
+  margin-top: 0;
+}
+
+.markdown-content blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Code blocks and inline code */
+.markdown-content code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.markdown-content pre {
+  margin-top: 0;
+  margin-bottom: 1em;
+  padding: 1em;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: rgba(40, 40, 40, 0.8);
+  border-radius: 4px;
+}
+
+.markdown-content pre code {
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+}
+
+/* Tables */
+.markdown-content table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  margin-top: 0;
+  margin-bottom: 1em;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+.markdown-content table th {
+  font-weight: 600;
+  text-align: left;
+}
+
+.markdown-content table th,
+.markdown-content table td {
+  padding: 6px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.markdown-content table tr {
+  background-color: transparent;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.markdown-content table tr:nth-child(2n) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Links */
+.markdown-content a {
+  color: #4a76a8;
+  text-decoration: none;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+/* Images */
+.markdown-content img {
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: 4px;
+  background-color: #2a2a2a;
+}
+
+/* Horizontal rules */
+.markdown-content hr {
+  height: 1px;
+  padding: 0;
+  margin: 1.5em 0;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 0;
+}
+
+/* Syntax highlighting with highlight.js */
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-link {
+  color: #8a4aa8; /* Purple */
+}
+
+.hljs-function .hljs-keyword {
+  color: #4a76a8; /* Blue */
+}
+
+.hljs-subst {
+  color: #f0f0f0;
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-name,
+.hljs-type,
+.hljs-attribute,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition,
+.hljs-variable,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: #4aa86c; /* Green */
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion,
+.hljs-meta {
+  color: #808080; /* Gray */
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+/* Math expressions */
+.markdown-content .math {
+  overflow-x: auto;
+  padding: 0.5em;
+  background-color: rgba(40, 40, 40, 0.5);
+  border-radius: 4px;
+}
+
+/* Custom styling for checkboxes in tasks */
+.markdown-content input[type="checkbox"] {
+  margin-right: 0.5em;
+  cursor: pointer;
+}
+
+/* Adapted the style to match the dark theme */
+.markdown-content input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.1);
+  vertical-align: middle;
+  position: relative;
+  margin-right: 6px;
+  margin-top: -2px;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.markdown-content input[type="checkbox"]:checked {
+  background-color: #4a76a8;
+  border-color: #4a76a8;
+}
+
+.markdown-content input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: white;
+  position: absolute;
+  font-size: 12px;
+  top: 0;
+  left: 3px;
+}
+
+/* Metadata display (like model info) */
+.message-metadata {
+  font-size: 11px;
+  color: #8a8a8a;
+  margin-top: 8px;
+  text-align: right;
+  opacity: 0.7;
+}
+
+/* Code block improvements */
+.code-block-wrapper {
+  margin: 1em 0;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background-color: #2a2a2a;
+}
+
+.code-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #333;
+  color: #ccc;
+  font-size: 12px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.code-block-language {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+.code-block-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.copy-code-btn {
+  background: rgba(100, 100, 100, 0.4);
+  border: none;
+  color: #ddd;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.copy-code-btn:hover {
+  background: rgba(120, 120, 120, 0.6);
+}
+
+/* Collapsible code blocks */
+pre.collapsible {
+  position: relative;
+  transition: max-height 0.3s ease;
+}
+
+pre.collapsible::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: linear-gradient(to bottom, rgba(40, 40, 40, 0), rgba(40, 40, 40, 0.9));
+  pointer-events: none;
+}
+
+pre.collapsible.expanded::after {
+  display: none;
+}
+
+.expand-code-btn {
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+  background-color: rgba(60, 60, 60, 0.7);
+  border: none;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.expand-code-btn:hover {
+  background-color: rgba(80, 80, 80, 0.8);
+  color: #fff;
+}

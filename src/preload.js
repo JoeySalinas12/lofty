@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, shell } = require('electron');
 
 // Expose protected methods that allow the renderer process to use IPC
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -37,5 +37,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Model configuration
   saveModelConfig: (config) => ipcRenderer.invoke('save-model-config', config),
   getModelConfig: () => ipcRenderer.invoke('get-model-config'),
-  getModeModel: (mode) => ipcRenderer.invoke('get-mode-model', mode)
+  getModeModel: (mode) => ipcRenderer.invoke('get-mode-model', mode),
+  
+  // External link handling
+  openExternalLink: (url) => shell.openExternal(url)
 });
