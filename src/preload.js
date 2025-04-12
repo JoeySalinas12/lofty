@@ -6,6 +6,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.send('window-minimize'),
   maximizeWindow: () => ipcRenderer.send('window-maximize'),
   closeWindow: () => ipcRenderer.send('window-close'),
+
+  // Markdown formatting
+  formatMarkdown: (text) => ipcRenderer.invoke('format-markdown', text),
   
   // Mode change
   changeMode: (mode) => ipcRenderer.send('mode-changed', mode),

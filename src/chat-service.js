@@ -1,6 +1,7 @@
 // chat-service.js - Handle chat storage with Supabase
 const { supabase } = require('./client');
 const authService = require('./auth-service');
+const messageFormatter = require('./message-formatter');
 
 class ChatService {
   /**
@@ -19,6 +20,7 @@ class ChatService {
         throw new Error('User not authenticated');
       }
 
+      // Store the raw response which includes the markdown
       const { data, error } = await supabase
         .from('queries')
         .insert({
@@ -191,6 +193,7 @@ class ChatService {
         type: 'user',
         content: message.prompt,
         timestamp: message.created_at,
+        formatted: false // User messages are typically not formatted as markdown
       });
       
       // Add bot message if this is a complete pair
@@ -200,6 +203,7 @@ class ChatService {
           content: message.response,
           model: message.model_name,
           timestamp: message.created_at,
+          formatted: true // Bot messages should be formatted as markdown
         });
       }
     }

@@ -1,10 +1,11 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const LLMBridge = require('./llm-bridge');
 const authService = require('./auth-service');
 const chatService = require('./chat-service');
 const keyStoreService = require('./key-store-service');
 const notificationService = require('./notification-service');
+const messageFormatter = require('./message-formatter');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) {
@@ -178,6 +179,7 @@ app.on('ready', async () => {
   setupAuthHandlers();
   setupChatHandlers();
   setupSettingsHandlers();
+  setupMarkdownHandler();
 });
 
 // Quit when all windows are closed, except on macOS
@@ -265,25 +267,6 @@ function setupAuthHandlers() {
 }
 
 function setupChatHandlers() {
-    // Handle external link opening
-    ipcMain.handle('open-external-link', async (event, url) => {
-      try {
-        // Validate URL to prevent potential security issues
-        const validatedUrl = new URL(url);
-        
-        // Only allow http or https protocols
-        if (validatedUrl.protocol !== 'http:' && validatedUrl.protocol !== 'https:') {
-          throw new Error('Only HTTP and HTTPS links are supported');
-        }
-        
-        // Open the URL in the default browser
-        await shell.openExternal(validatedUrl.href);
-        return { success: true };
-      } catch (error) {
-        console.error('Error opening external link:', error);
-        return { error: error.message };
-      }
-    });
   // Handle LLM queries - updated to use stored API keys
   ipcMain.handle('query-llm', async (event, model, prompt, chatId) => {
     console.log(`Querying ${model} with prompt: ${prompt} for chat: ${chatId}`);
@@ -424,6 +407,20 @@ function setupSettingsHandlers() {
     } catch (error) {
       console.error('Error getting model configuration:', error);
       return getDefaultModelConfig();
+    }
+  });
+}
+
+// Add function to handle markdown formatting
+function setupMarkdownHandler() {
+  // Handle markdown formatting requests from renderer
+  ipcMain.handle('format-markdown', (event, text) => {
+    try {
+      console.log('Formatting markdown text');
+      return messageFormatter.formatMessage(text);
+    } catch (error) {
+      console.error('Error formatting markdown:', error);
+      return text; // Return original text on error
     }
   });
 }
