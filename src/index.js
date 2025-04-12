@@ -118,8 +118,7 @@ const createSettingsWindow = () => {
       preload: path.join(__dirname, 'preload.js')
     },
     backgroundColor: '#1e1e1e',
-    parent: mainWindow,
-    modal: process.platform !== 'darwin', // Modal on Windows/Linux, non-modal on macOS
+    modal: false,
   };
 
   // Platform-specific settings
