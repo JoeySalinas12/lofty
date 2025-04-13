@@ -5,7 +5,8 @@ const authService = require('./auth-service');
 const chatService = require('./chat-service');
 const keyStoreService = require('./key-store-service');
 const notificationService = require('./notification-service');
-const messageFormatter = require('./message-formatter');
+// const messageFormatter = require('./message-formatter');
+const messageFormatter = require('./message-formatter-math');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) {

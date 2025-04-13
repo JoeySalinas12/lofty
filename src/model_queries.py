@@ -97,7 +97,15 @@ Always format your responses using Markdown syntax for better readability:
 - Use bullet points or numbered lists when listing items
 - Use > blockquotes for important notes or quotes
 - Use tables with | dividers when presenting tabular data
-- Use mathematical notation when appropriate
+
+IMPORTANT: For mathematical expressions, use LaTeX syntax:
+- Use single dollar signs for inline math: $x^2 + y^2 = r^2$
+- Use double dollar signs for block/display math: 
+  $$\\int_{-\\pi}^{\\pi} \\sin(x) dx = 0$$
+- Be sure to escape backslashes in LaTeX: \\\\sin instead of \\sin
+- For fractions use \\\\frac{numerator}{denominator}
+- For integrals use \\\\int_{lower}^{upper} expression
+- For summations use \\\\sum_{i=1}^{n} expression
 """
 
         message = client.messages.create(
