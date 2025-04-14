@@ -1,8 +1,9 @@
-// key-store-service.js - Handle secure storage of API keys locally
+// key-store-service.js - Enhanced version for multiple API keys
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const modelConfig = require('./model-config');
 
 class KeyStoreService {
   constructor() {
@@ -29,21 +30,33 @@ class KeyStoreService {
         console.log(`Created storage directory at ${this.storageDir}`);
       }
       
-      // Create keys file if it doesn't exist
+      // Create keys file with default empty keys if it doesn't exist
       if (!fs.existsSync(this.keysFile)) {
-        fs.writeFileSync(this.keysFile, this.encrypt(JSON.stringify({
-          openai: '',
-          anthropic: '',
-          gemini: ''
-        })));
+        // Initialize with all possible API keys that might be needed
+        const defaultKeys = {
+          openai: '',     // For GPT models
+          anthropic: '',  // For Claude models
+          gemini: '',     // For Gemini models
+          deepseek: '',   // For DeepSeek models
+          openchat: '',   // For OpenChat models
+          yi: '',         // For Yi models
+          gecko: ''       // For Gecko models
+        };
+        
+        fs.writeFileSync(this.keysFile, this.encrypt(JSON.stringify(defaultKeys)));
       }
       
-      // Create config file if it doesn't exist
+      // Create config file with default models if it doesn't exist
       if (!fs.existsSync(this.configFile)) {
+        // Get default models for each mode/use case
+        const reasoningModel = modelConfig.getDefaultModelForUseCase('reasoning', true);
+        const mathModel = modelConfig.getDefaultModelForUseCase('math', true);
+        const programmingModel = modelConfig.getDefaultModelForUseCase('programming', true);
+        
         fs.writeFileSync(this.configFile, JSON.stringify({
-          reasoning: 'claude',
-          math: 'gemini',
-          programming: 'gpt'
+          reasoning: reasoningModel,
+          math: mathModel,
+          programming: programmingModel
         }));
       }
     } catch (error) {
@@ -104,7 +117,13 @@ class KeyStoreService {
    */
   async saveApiKeys(keys) {
     try {
-      const encryptedData = this.encrypt(JSON.stringify(keys));
+      // Get current keys first to make sure we don't lose any
+      const currentKeys = await this.getApiKeys();
+      
+      // Update keys with new values, keeping existing ones
+      const updatedKeys = { ...currentKeys, ...keys };
+      
+      const encryptedData = this.encrypt(JSON.stringify(updatedKeys));
       fs.writeFileSync(this.keysFile, encryptedData);
       return true;
     } catch (error) {
@@ -120,7 +139,10 @@ class KeyStoreService {
   async getApiKeys() {
     try {
       if (!fs.existsSync(this.keysFile)) {
-        return { openai: '', anthropic: '', gemini: '' };
+        return {
+          openai: '', anthropic: '', gemini: '',
+          deepseek: '', openchat: '', yi: '', gecko: ''
+        };
       }
       
       const encryptedData = fs.readFileSync(this.keysFile, 'utf8');
@@ -128,7 +150,10 @@ class KeyStoreService {
       return JSON.parse(decryptedData);
     } catch (error) {
       console.error('Error getting API keys:', error);
-      return { openai: '', anthropic: '', gemini: '' };
+      return {
+        openai: '', anthropic: '', gemini: '',
+        deepseek: '', openchat: '', yi: '', gecko: ''
+      };
     }
   }
   
@@ -155,20 +180,33 @@ class KeyStoreService {
     try {
       if (!fs.existsSync(this.configFile)) {
         return {
-          reasoning: 'claude',
-          math: 'gemini',
-          programming: 'gpt'
+          reasoning: modelConfig.getDefaultModelForUseCase('reasoning', true),
+          math: modelConfig.getDefaultModelForUseCase('math', true),
+          programming: modelConfig.getDefaultModelForUseCase('programming', true)
         };
       }
       
       const data = fs.readFileSync(this.configFile, 'utf8');
-      return JSON.parse(data);
+      const config = JSON.parse(data);
+      
+      // Ensure all required modes are present
+      if (!config.reasoning) {
+        config.reasoning = modelConfig.getDefaultModelForUseCase('reasoning', true);
+      }
+      if (!config.math) {
+        config.math = modelConfig.getDefaultModelForUseCase('math', true);
+      }
+      if (!config.programming) {
+        config.programming = modelConfig.getDefaultModelForUseCase('programming', true);
+      }
+      
+      return config;
     } catch (error) {
       console.error('Error getting model configuration:', error);
       return {
-        reasoning: 'claude',
-        math: 'gemini',
-        programming: 'gpt'
+        reasoning: modelConfig.getDefaultModelForUseCase('reasoning', true),
+        math: modelConfig.getDefaultModelForUseCase('math', true),
+        programming: modelConfig.getDefaultModelForUseCase('programming', true)
       };
     }
   }
@@ -180,15 +218,78 @@ class KeyStoreService {
   async exportKeysToEnv() {
     try {
       const keys = await this.getApiKeys();
-      return {
-        GPT_API_KEY: keys.openai || '',
-        CLAUDE_API_KEY: keys.anthropic || '',
-        GEMENI_API_KEY: keys.gemini || '' // Keep the typo to match existing code
-      };
+      const envVars = {};
+      
+      // Export all API keys to environment variables
+      Object.keys(keys).forEach(keyName => {
+        // Different providers use different environment variable names
+        switch (keyName) {
+          case 'openai':
+            envVars['GPT_API_KEY'] = keys[keyName] || '';
+            break;
+          case 'anthropic':
+            envVars['CLAUDE_API_KEY'] = keys[keyName] || '';
+            break;
+          case 'gemini':
+            // Keep both spellings for backward compatibility
+            envVars['GEMINI_API_KEY'] = keys[keyName] || '';
+            envVars['GEMENI_API_KEY'] = keys[keyName] || ''; // Typo in original code
+            break;
+          default:
+            // Generate standard environment variable names for other providers
+            const envName = `${keyName.toUpperCase()}_API_KEY`;
+            envVars[envName] = keys[keyName] || '';
+        }
+      });
+      
+      return envVars;
     } catch (error) {
       console.error('Error exporting API keys to env:', error);
       return {};
     }
+  }
+  
+  /**
+   * Get model details for a specific mode
+   * @param {string} mode - The mode (reasoning, math, programming)
+   * @returns {Promise<object>} - Model details
+   */
+  async getModelForMode(mode) {
+    try {
+      const config = await this.getModelConfig();
+      const modelId = config[mode];
+      
+      if (!modelId) {
+        // If no model is configured, use default
+        return modelConfig.getDefaultModelForUseCase(
+          this.modeToUseCase(mode), 
+          true
+        );
+      }
+      
+      return modelId;
+    } catch (error) {
+      console.error('Error getting model for mode:', error);
+      return modelConfig.getDefaultModelForUseCase(
+        this.modeToUseCase(mode), 
+        true
+      );
+    }
+  }
+  
+  /**
+   * Map app modes to use cases from model-config.js
+   * @param {string} mode - The app mode
+   * @returns {string} - The corresponding use case
+   */
+  modeToUseCase(mode) {
+    const modeMap = {
+      'reasoning': 'reasoning',
+      'math': 'math',
+      'programming': 'programming'
+    };
+    
+    return modeMap[mode] || mode;
   }
 }
 
