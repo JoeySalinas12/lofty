@@ -160,9 +160,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       const useCase = useCaseMapping[currentMode] || currentMode;
       
-      // Placeholder for integration with model-config.js
-      // In a real implementation, we would get this from the main process
-      const models = {
+      // Get models from main process
+      const models = await window.electronAPI.getModelsForMode(useCase, false) || {
         'reasoning': [
           { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isPaid: true, requiresApiKey: true, apiKeyName: 'anthropic', description: 'Excels at reasoning and technical writing with strong factual accuracy.' },
           { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', isPaid: true, requiresApiKey: true, apiKeyName: 'openai', description: 'Powerful for programming, summarization, and creative content.' },
@@ -185,10 +184,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           { id: 'deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Strong at programming, math & reasoning; free tier option.' },
           { id: 'openchat-3.5', name: 'OpenChat 3.5', provider: 'OpenChat', isPaid: false, requiresApiKey: false, description: 'Great for technical writing and creative content; free to use.' }
         ]
-      };
+      }[useCase] || [];
       
       // Store available models for the current mode
-      availableModels[currentMode] = models[currentMode] || [];
+      availableModels[currentMode] = models;
       
       // Update the model dropdown
       updateModelDropdown();
@@ -350,10 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         tooltipStatus.className = 'tooltip-status free';
       }
       
-      // Position and show tooltip
-      const rect = modelDropdown.getBoundingClientRect();
-      modelInfoTooltip.style.top = `${rect.bottom + 10}px`;
-      modelInfoTooltip.style.left = `${rect.left}px`;
+      // Make tooltip visible - CSS will handle positioning
       modelInfoTooltip.classList.add('visible');
     }
   }
@@ -741,10 +737,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       sendMessage();
     }
   });
-  
+
   // Listen for new chat button click
   newChatButton.addEventListener('click', createNewChat);
-  
+
   // Function to update UI for selected model
   function updateUIForSelectedModel() {
     // Update the logo and placeholder text
@@ -762,7 +758,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add sparkle effect if needed
     addSparkleEffect();
   }
-  
+
   // Function to add sparkle effect to the logo
   function addSparkleEffect() {
     const logoText = document.getElementById('logo-text');
@@ -791,7 +787,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }, 8000); // Animation visible for 8 seconds
     }, 100); // Slightly increased delay
   }
-  
+
   // Function to load a specific chat
   function loadChat(chatId) {
     // Remove loading indicator if it exists
@@ -858,7 +854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       chatMessages.classList.remove('fade-in');
     }, 500);
   }
-  
+
   // Function to send a new message
   async function sendMessage() {
     const messageText = messageInput.value.trim();
@@ -945,7 +941,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Scroll to the bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
-  
+
   // Function to create a new chat
   function createNewChat() {
     // Generate a new chat ID
@@ -997,7 +993,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatMessages.innerHTML = '';
     currentChatTitle.textContent = 'New Chat';
   }
-  
+
   // Function to append a message to the chat
   function appendMessage(type, content, formatted = false, modelId = null) {
     const messageDiv = document.createElement('div');
@@ -1072,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
-  
+
   // Function to add copy buttons to code blocks
   function addCopyCodeButtons(contentElement) {
     // Find all pre elements containing code blocks
@@ -1120,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       container.appendChild(copyButton);
     });
   }
-  
+
   // Function to update the chat title
   function updateChatTitle(chatId, newTitle) {
     chatHistory[chatId].title = newTitle;
@@ -1136,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentChatTitle.textContent = newTitle;
     }
   }
-  
+
   // Function to update UI based on the selected mode
   async function updateUIForMode(mode) {
     const container = document.querySelector('.container');
@@ -1153,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add sparkle effect - implemented in updateUIForSelectedModel
     updateUIForSelectedModel();
   }
-  
+
   // Listen for API key changes
   // This approach allows settings changes to be reflected immediately in the current window
   window.addEventListener('storage', async (event) => {
@@ -1173,4 +1169,4 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateModelDropdown();
     }
   });
-});
+  });
