@@ -1,0 +1,154 @@
+/* Model selector styles for the main UI */
+.mode-selector-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  border-bottom-width: 3px;
+  border-bottom-style: solid;
+  border-image: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c) 1;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(74, 118, 168, 0.2);
+}
+
+.mode-selector, .model-selector {
+  position: relative;
+  min-width: 180px;
+}
+
+#mode-dropdown, #model-dropdown {
+  background-color: rgba(58, 58, 58, 0.9);
+  color: white;
+  border: 1px solid rgba(72, 72, 72, 0.8);
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+}
+
+.mode-selector::after, .model-selector::after {
+  content: '▼';
+  font-size: 10px;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #888;
+}
+
+/* Style for optgroups and options */
+optgroup {
+  background-color: #333;
+  color: #bbb;
+  font-weight: bold;
+  padding: 5px 0;
+}
+
+option {
+  background-color: #3a3a3a;
+  padding: 5px 0;
+}
+
+option.free-model {
+  color: #a3e8a3;
+}
+
+option.paid-model {
+  color: #f3cc7d;
+}
+
+option:disabled {
+  color: #777;
+  font-style: italic;
+}
+
+/* Model info tooltip */
+.model-info-tooltip {
+  position: absolute;
+  background-color: rgba(42, 42, 42, 0.95);
+  border: 1px solid rgba(72, 72, 72, 0.8);
+  border-radius: 6px;
+  padding: 12px;
+  width: 280px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: none;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  opacity: 0;
+}
+
+.model-info-tooltip.visible {
+  display: block;
+  opacity: 1;
+}
+
+.tooltip-header {
+  font-weight: bold;
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-description {
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.tooltip-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.tooltip-status.free {
+  background-color: rgba(74, 168, 108, 0.2);
+  color: #a3e8a3;
+  border: 1px solid rgba(74, 168, 108, 0.4);
+}
+
+.tooltip-status.paid {
+  background-color: rgba(138, 74, 168, 0.2);
+  color: #f3cc7d;
+  border: 1px solid rgba(138, 74, 168, 0.4);
+}
+
+.tooltip-status.no-key {
+  background-color: rgba(168, 74, 74, 0.2);
+  color: #ff9f9f;
+  border: 1px solid rgba(168, 74, 74, 0.4);
+}
+
+/* Model badge shown in message */
+.model-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.model-badge.free {
+  background-color: rgba(74, 168, 108, 0.3);
+  color: #a3e8a3;
+}
+
+.model-badge.paid {
+  background-color: rgba(138, 74, 168, 0.3);
+  color: #f3cc7d;
+}

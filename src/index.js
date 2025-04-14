@@ -5,8 +5,8 @@ const authService = require('./auth-service');
 const chatService = require('./chat-service');
 const keyStoreService = require('./key-store-service');
 const notificationService = require('./notification-service');
-// const messageFormatter = require('./message-formatter');
 const messageFormatter = require('./message-formatter-math');
+const modelConfig = require('./model-config');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) {
@@ -269,16 +269,16 @@ function setupAuthHandlers() {
 
 function setupChatHandlers() {
   // Handle LLM queries - updated to use stored API keys
-  ipcMain.handle('query-llm', async (event, model, prompt, chatId) => {
-    console.log(`Querying ${model} with prompt: ${prompt} for chat: ${chatId}`);
+  ipcMain.handle('query-llm', async (event, modelId, prompt, chatId) => {
+    console.log(`Querying ${modelId} with prompt: ${prompt} for chat: ${chatId}`);
     try {
       // Pass the API keys to the LLM bridge
       const apiKeys = await keyStoreService.exportKeysToEnv();
-      const response = await LLMBridge.queryLLM(model, prompt, apiKeys);
+      const response = await LLMBridge.queryLLM(modelId, prompt, apiKeys);
       
       // Save the message exchange to Supabase
       if (authService.isAuthenticated()) {
-        await chatService.saveMessage(model, prompt, response, chatId);
+        await chatService.saveMessage(modelId, prompt, response, chatId);
       }
       
       return response;
@@ -334,11 +334,44 @@ function setupChatHandlers() {
   // Handle getting model for mode
   ipcMain.handle('get-mode-model', async (event, mode) => {
     try {
-      const modelConfig = await keyStoreService.getModelConfig();
-      return modelConfig[mode] || getDefaultModel(mode);
+      const modelConf = await keyStoreService.getModelConfig();
+      return modelConf[mode] || getDefaultModel(mode);
     } catch (error) {
       console.error('Error getting model for mode:', error);
       return getDefaultModel(mode);
+    }
+  });
+  
+  // NEW: Handle getting all models for a mode
+  ipcMain.handle('get-models-for-mode', async (event, mode, freeOnly = false) => {
+    try {
+      // Map app modes to use cases in model-config
+      const useCaseMapping = {
+        'reasoning': 'reasoning',
+        'math': 'math',
+        'programming': 'programming'
+      };
+      
+      const useCase = useCaseMapping[mode] || mode;
+      
+      // Get all models for this use case
+      const models = LLMBridge.getModelsForUseCase(useCase, freeOnly);
+      
+      return models;
+    } catch (error) {
+      console.error('Error getting models for mode:', error);
+      return [];
+    }
+  });
+  
+  // NEW: Handle API key validation
+  ipcMain.handle('validate-api-key', async (event, modelId, apiKey) => {
+    try {
+      const isValid = await LLMBridge.validateApiKey(modelId, apiKey);
+      return { valid: isValid };
+    } catch (error) {
+      console.error('Error validating API key:', error);
+      return { valid: false, error: error.message };
     }
   });
 }
@@ -380,7 +413,7 @@ function setupSettingsHandlers() {
       return await keyStoreService.getApiKeys();
     } catch (error) {
       console.error('Error getting API keys:', error);
-      return { openai: '', anthropic: '', gemini: '' };
+      return { openai: '', anthropic: '', gemini: '', deepseek: '', openchat: '', yi: '', gecko: '' };
     }
   });
   
@@ -428,20 +461,14 @@ function setupMarkdownHandler() {
 
 // Helper function to get default model for a mode
 function getDefaultModel(mode) {
-  const defaults = {
-    'reasoning': 'claude',
-    'math': 'gemini',
-    'programming': 'gpt'
-  };
-  
-  return defaults[mode] || 'claude';
+  return modelConfig.getDefaultModelForUseCase(mode, true); // Prefer free models by default
 }
 
 // Helper function to get default model configuration
 function getDefaultModelConfig() {
   return {
-    reasoning: 'claude',
-    math: 'gemini',
-    programming: 'gpt'
+    reasoning: modelConfig.getDefaultModelForUseCase('reasoning', true),
+    math: modelConfig.getDefaultModelForUseCase('math', true),
+    programming: modelConfig.getDefaultModelForUseCase('programming', true)
   };
 }

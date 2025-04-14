@@ -21,15 +21,11 @@
   height: 38px; /* Match title bar height */
   -webkit-app-region: drag;
   z-index: 10000;
-  /* Optional: Add background color to match title bar exactly */
   background-color: #2a2a2a; /* Match your title bar color */
-  /* Optional: Match any border radius at the top */
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
-  /* Optional: Make the drag region visually invisible while still functional */
   opacity: 0;
 }
-
 
 .settings-container {
   width: 100%;
@@ -101,6 +97,24 @@
   color: #999999;
   font-size: 14px;
   margin-bottom: 15px;
+}
+
+/* New subsection styles */
+.subsection-header {
+  color: #bbbbbb;
+  font-size: 16px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 5px;
+}
+
+.subsection-description {
+  color: #888888;
+  font-size: 13px;
+  margin-bottom: 15px;
+  font-style: italic;
 }
 
 .form-group {
@@ -246,4 +260,211 @@
   .settings-header {
     padding-top: 30px; /* Provide space for native traffic lights on macOS */
   }
+}
+
+/* Model selector styles */
+.model-selector {
+  position: relative;
+  width: 100%;
+}
+
+select.model-selector {
+  background-color: #3a3a3a;
+  color: #fff;
+  border: 1px solid #484848;
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  width: 100%;
+}
+
+.model-selector::after {
+  content: '▼';
+  font-size: 10px;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #888;
+}
+
+/* Free vs Paid model styling in dropdown */
+optgroup {
+  font-weight: bold;
+  color: #999;
+  padding: 5px 0;
+}
+
+option.free-model {
+  color: #a3e8a3;
+}
+
+option.paid-model {
+  color: #f3cc7d;
+}
+
+/* Add key badge */
+.key-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.key-badge.provided {
+  background-color: rgba(74, 168, 108, 0.2);
+  color: #a3e8a3;
+  border: 1px solid rgba(74, 168, 108, 0.4);
+}
+
+.key-badge.missing {
+  background-color: rgba(168, 74, 74, 0.2);
+  color: #ff9f9f;
+  border: 1px solid rgba(168, 74, 74, 0.4);
+}
+
+.key-badge.optional {
+  background-color: rgba(168, 138, 74, 0.2);
+  color: #f3cc7d;
+  border: 1px solid rgba(168, 138, 74, 0.4);
+}
+
+/* Additional styles for new model selector UI */
+
+/* Mode and model selector container */
+.mode-selector-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Model selector styles */
+.model-selector {
+  position: relative;
+}
+
+#model-dropdown {
+  background-color: rgba(58, 58, 58, 0.9);
+  color: white;
+  border: 1px solid rgba(72, 72, 72, 0.8);
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  outline: none;
+  width: 180px;
+  font-size: 14px;
+}
+
+.model-selector::after {
+  content: '▼';
+  font-size: 10px;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #888;
+}
+
+/* Styling for free vs paid models */
+option.free-model {
+  color: #a3e8a3;
+}
+
+option.paid-model {
+  color: #f3cc7d;
+}
+
+/* Model info tooltip */
+.model-info-tooltip {
+  position: absolute;
+  background-color: rgba(42, 42, 42, 0.95);
+  border: 1px solid rgba(72, 72, 72, 0.8);
+  border-radius: 6px;
+  padding: 12px;
+  width: 280px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: none;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  opacity: 0;
+}
+
+.model-info-tooltip.visible {
+  display: block;
+  opacity: 1;
+}
+
+.tooltip-header {
+  font-weight: bold;
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-description {
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.tooltip-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.tooltip-status.free {
+  background-color: rgba(74, 168, 108, 0.2);
+  color: #a3e8a3;
+  border: 1px solid rgba(74, 168, 108, 0.4);
+}
+
+.tooltip-status.paid {
+  background-color: rgba(138, 74, 168, 0.2);
+  color: #f3cc7d;
+  border: 1px solid rgba(138, 74, 168, 0.4);
+}
+
+.tooltip-status.no-key {
+  background-color: rgba(168, 74, 74, 0.2);
+  color: #ff9f9f;
+  border: 1px solid rgba(168, 74, 74, 0.4);
+}
+
+/* Model badge shown in message */
+.model-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.model-badge.free {
+  background-color: rgba(74, 168, 108, 0.3);
+  color: #a3e8a3;
+}
+
+.model-badge.paid {
+  background-color: rgba(138, 74, 168, 0.3);
+  color: #f3cc7d;
 }

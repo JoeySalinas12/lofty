@@ -42,6 +42,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getModelConfig: () => ipcRenderer.invoke('get-model-config'),
   getModeModel: (mode) => ipcRenderer.invoke('get-mode-model', mode),
   
+  // Enhanced model functionality
+  getModelsForMode: (mode, freeOnly) => ipcRenderer.invoke('get-models-for-mode', mode, freeOnly),
+  validateApiKey: (provider, key) => ipcRenderer.invoke('validate-api-key', provider, key),
+  
   // External link handling
   openExternalLink: (url) => shell.openExternal(url)
 });

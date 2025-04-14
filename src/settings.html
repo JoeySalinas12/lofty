@@ -22,6 +22,9 @@
         <p class="section-description">Configure your API keys for each AI model. These keys are stored locally on your device.</p>
         
         <form id="api-keys-form">
+          <!-- Paid Models -->
+          <h3 class="subsection-header">Paid Models</h3>
+          
           <div class="form-group">
             <label for="openai-key">OpenAI API Key (GPT-4)</label>
             <div class="input-with-toggle">
@@ -63,6 +66,66 @@
             </div>
             <span class="api-key-status" id="gemini-key-status"></span>
           </div>
+          
+          <!-- Free/Optional Models -->
+          <h3 class="subsection-header">Free & Optional Models</h3>
+          <p class="subsection-description">These models may be free to use or have free tiers available. Some still require API keys.</p>
+          
+          <div class="form-group">
+            <label for="deepseek-key">DeepSeek API Key (Optional)</label>
+            <div class="input-with-toggle">
+              <input type="password" id="deepseek-key" placeholder="Your DeepSeek API key..." autocomplete="off">
+              <button type="button" class="toggle-visibility" data-for="deepseek-key">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="api-key-status" id="deepseek-key-status"></span>
+          </div>
+          
+          <div class="form-group">
+            <label for="openchat-key">OpenChat API Key (Optional)</label>
+            <div class="input-with-toggle">
+              <input type="password" id="openchat-key" placeholder="Your OpenChat API key..." autocomplete="off">
+              <button type="button" class="toggle-visibility" data-for="openchat-key">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="api-key-status" id="openchat-key-status"></span>
+          </div>
+          
+          <div class="form-group">
+            <label for="yi-key">Yi API Key (Optional)</label>
+            <div class="input-with-toggle">
+              <input type="password" id="yi-key" placeholder="Your Yi model API key..." autocomplete="off">
+              <button type="button" class="toggle-visibility" data-for="yi-key">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="api-key-status" id="yi-key-status"></span>
+          </div>
+          
+          <div class="form-group">
+            <label for="gecko-key">Gecko API Key (Optional)</label>
+            <div class="input-with-toggle">
+              <input type="password" id="gecko-key" placeholder="Your Gecko model API key..." autocomplete="off">
+              <button type="button" class="toggle-visibility" data-for="gecko-key">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="api-key-status" id="gecko-key-status"></span>
+          </div>
 
           <div class="form-actions">
             <button type="submit" id="save-api-keys-btn" class="settings-button">Save API Keys</button>
@@ -72,33 +135,54 @@
 
       <div class="settings-section">
         <h2 class="section-header">Model Configuration</h2>
-        <p class="section-description">Configure which models to use for each mode.</p>
+        <p class="section-description">Configure which models to use for each mode. Free models will be used by default if no API keys are provided.</p>
         
         <form id="model-config-form">
           <div class="form-group">
             <label for="reasoning-model">Reasoning Mode</label>
-            <select id="reasoning-model">
-              <option value="claude">Claude (Anthropic)</option>
-              <option value="gpt">GPT-4 (OpenAI)</option>
-              <option value="gemini">Gemini (Google)</option>
+            <select id="reasoning-model" class="model-selector">
+              <optgroup label="Paid Models">
+                <option value="claude-3.5-sonnet">Claude 3.5 Sonnet (Anthropic)</option>
+                <option value="gpt-4-turbo">GPT-4 Turbo (OpenAI)</option>
+                <option value="gemini-2-pro">Gemini 2 Pro (Google)</option>
+              </optgroup>
+              <optgroup label="Free Models">
+                <option value="deepseek-v3">DeepSeek V3</option>
+                <option value="openchat-3.5">OpenChat 3.5</option>
+                <option value="gecko-3">Gecko 3</option>
+                <option value="yi-1.5-34b">Yi 1.5-34B</option>
+              </optgroup>
             </select>
           </div>
 
           <div class="form-group">
             <label for="math-model">Math Mode</label>
-            <select id="math-model">
-              <option value="gemini">Gemini (Google)</option>
-              <option value="gpt">GPT-4 (OpenAI)</option>
-              <option value="claude">Claude (Anthropic)</option>
+            <select id="math-model" class="model-selector">
+              <optgroup label="Paid Models">
+                <option value="gpt-4-turbo">GPT-4 Turbo (OpenAI)</option>
+                <option value="claude-3.5-sonnet">Claude 3.5 Sonnet (Anthropic)</option>
+                <option value="gemini-2-pro">Gemini 2 Pro (Google)</option>
+              </optgroup>
+              <optgroup label="Free Models">
+                <option value="deepseek-v3">DeepSeek V3</option>
+                <option value="openchat-3.5">OpenChat 3.5</option>
+                <option value="yi-1.5-34b">Yi 1.5-34B</option>
+              </optgroup>
             </select>
           </div>
 
           <div class="form-group">
             <label for="programming-model">Programming Mode</label>
-            <select id="programming-model">
-              <option value="gpt">GPT-4 (OpenAI)</option>
-              <option value="claude">Claude (Anthropic)</option>
-              <option value="gemini">Gemini (Google)</option>
+            <select id="programming-model" class="model-selector">
+              <optgroup label="Paid Models">
+                <option value="gpt-4-turbo">GPT-4 Turbo (OpenAI)</option>
+                <option value="claude-3.5-sonnet">Claude 3.5 Sonnet (Anthropic)</option>
+              </optgroup>
+              <optgroup label="Free Models">
+                <option value="deepseek-coder">DeepSeek Coder</option>
+                <option value="deepseek-v3">DeepSeek V3</option>
+                <option value="openchat-3.5">OpenChat 3.5</option>
+              </optgroup>
             </select>
           </div>
 

@@ -1,35 +1,47 @@
 // Settings page functionality
 document.addEventListener('DOMContentLoaded', async () => {
   // Get UI elements
-  // Remove the close settings button reference since we've removed it from the HTML
   const apiKeysForm = document.getElementById('api-keys-form');
   const modelConfigForm = document.getElementById('model-config-form');
   const saveApiKeysBtn = document.getElementById('save-api-keys-btn');
   const saveModelConfigBtn = document.getElementById('save-model-config-btn');
   
-  // API key input fields
-  const openaiKeyInput = document.getElementById('openai-key');
-  const anthropicKeyInput = document.getElementById('anthropic-key');
-  const geminiKeyInput = document.getElementById('gemini-key');
+  // All API key input fields
+  const apiKeyInputs = {
+    // Paid models
+    openai: document.getElementById('openai-key'),
+    anthropic: document.getElementById('anthropic-key'),
+    gemini: document.getElementById('gemini-key'),
+    // Optional/free models
+    deepseek: document.getElementById('deepseek-key'),
+    openchat: document.getElementById('openchat-key'),
+    yi: document.getElementById('yi-key'),
+    gecko: document.getElementById('gecko-key')
+  };
   
   // API key status elements
-  const openaiKeyStatus = document.getElementById('openai-key-status');
-  const anthropicKeyStatus = document.getElementById('anthropic-key-status');
-  const geminiKeyStatus = document.getElementById('gemini-key-status');
+  const apiKeyStatuses = {
+    openai: document.getElementById('openai-key-status'),
+    anthropic: document.getElementById('anthropic-key-status'),
+    gemini: document.getElementById('gemini-key-status'),
+    deepseek: document.getElementById('deepseek-key-status'),
+    openchat: document.getElementById('openchat-key-status'),
+    yi: document.getElementById('yi-key-status'),
+    gecko: document.getElementById('gecko-key-status')
+  };
   
   // Model config selectors
-  const reasoningModelSelect = document.getElementById('reasoning-model');
-  const mathModelSelect = document.getElementById('math-model');
-  const programmingModelSelect = document.getElementById('programming-model');
+  const modelSelectors = {
+    reasoning: document.getElementById('reasoning-model'),
+    math: document.getElementById('math-model'),
+    programming: document.getElementById('programming-model')
+  };
   
   // Toggle password visibility buttons
   const toggleVisibilityButtons = document.querySelectorAll('.toggle-visibility');
   
   // Load existing settings when the page loads
   await loadSettings();
-  
-  // Remove the close button event listener since we removed the button
-  // Now using native window controls
   
   // Save API keys
   apiKeysForm.addEventListener('submit', async (e) => {
@@ -39,31 +51,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveApiKeysBtn.disabled = true;
     saveApiKeysBtn.textContent = 'Saving...';
     
-    // Get API key values
-    const openaiKey = openaiKeyInput.value.trim();
-    const anthropicKey = anthropicKeyInput.value.trim();
-    const geminiKey = geminiKeyInput.value.trim();
+    // Create an object to store all API keys
+    const apiKeys = {};
+    
+    // Get all API key values
+    for (const [provider, input] of Object.entries(apiKeyInputs)) {
+      apiKeys[provider] = input.value.trim();
+    }
     
     try {
       // Save the API keys
-      const result = await window.electronAPI.saveApiKeys({
-        openai: openaiKey,
-        anthropic: anthropicKey,
-        gemini: geminiKey
-      });
+      const result = await window.electronAPI.saveApiKeys(apiKeys);
       
       if (result.success) {
-        showStatusMessage(openaiKeyStatus, 'Saved successfully!', 'success');
-        showStatusMessage(anthropicKeyStatus, 'Saved successfully!', 'success');
-        showStatusMessage(geminiKeyStatus, 'Saved successfully!', 'success');
+        // Show success message for each field
+        for (const status of Object.values(apiKeyStatuses)) {
+          showStatusMessage(status, 'Saved successfully!', 'success');
+        }
       } else {
-        showStatusMessage(openaiKeyStatus, 'Failed to save', 'error');
-        showStatusMessage(anthropicKeyStatus, 'Failed to save', 'error');
-        showStatusMessage(geminiKeyStatus, 'Failed to save', 'error');
+        // Show error message for each field
+        for (const status of Object.values(apiKeyStatuses)) {
+          showStatusMessage(status, 'Failed to save', 'error');
+        }
       }
     } catch (error) {
       console.error('Error saving API keys:', error);
-      showStatusMessage(openaiKeyStatus, 'Error saving keys', 'error');
+      // Show error message for each field
+      for (const status of Object.values(apiKeyStatuses)) {
+        showStatusMessage(status, 'Error saving keys', 'error');
+      }
     } finally {
       // Re-enable the save button
       saveApiKeysBtn.disabled = false;
@@ -71,7 +87,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Clear status messages after a delay
       setTimeout(() => {
-        clearStatusMessages();
+        for (const status of Object.values(apiKeyStatuses)) {
+          status.textContent = '';
+          status.className = 'api-key-status';
+        }
       }, 3000);
     }
   });
@@ -84,55 +103,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveModelConfigBtn.disabled = true;
     saveModelConfigBtn.textContent = 'Saving...';
     
-    // Get selected model values
-    const reasoningModel = reasoningModelSelect.value;
-    const mathModel = mathModelSelect.value;
-    const programmingModel = programmingModelSelect.value;
+    // Create an object for model configuration
+    const modelConfig = {};
+    
+    // Get all model selections
+    for (const [mode, selector] of Object.entries(modelSelectors)) {
+      modelConfig[mode] = selector.value;
+    }
     
     try {
       // Save the model configuration
-      const result = await window.electronAPI.saveModelConfig({
-        reasoning: reasoningModel,
-        math: mathModel,
-        programming: programmingModel
-      });
+      const result = await window.electronAPI.saveModelConfig(modelConfig);
       
       if (result.success) {
         // Show success notification
-        const notification = document.createElement('div');
-        notification.className = 'settings-notification success';
-        notification.textContent = 'Model configuration saved successfully!';
-        document.body.appendChild(notification);
-        
-        // Remove notification after a delay
-        setTimeout(() => {
-          document.body.removeChild(notification);
-        }, 3000);
+        showNotification('Model configuration saved successfully!', 'success');
       } else {
         // Show error notification
-        const notification = document.createElement('div');
-        notification.className = 'settings-notification error';
-        notification.textContent = 'Failed to save model configuration!';
-        document.body.appendChild(notification);
-        
-        // Remove notification after a delay
-        setTimeout(() => {
-          document.body.removeChild(notification);
-        }, 3000);
+        showNotification('Failed to save model configuration!', 'error');
       }
     } catch (error) {
       console.error('Error saving model configuration:', error);
-      
       // Show error notification
-      const notification = document.createElement('div');
-      notification.className = 'settings-notification error';
-      notification.textContent = 'Error saving configuration: ' + error.message;
-      document.body.appendChild(notification);
-      
-      // Remove notification after a delay
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 3000);
+      showNotification('Error saving configuration: ' + error.message, 'error');
     } finally {
       // Re-enable the save button
       saveModelConfigBtn.disabled = false;
@@ -172,20 +165,40 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Load API keys
       const apiKeys = await window.electronAPI.getApiKeys();
       if (apiKeys) {
-        openaiKeyInput.value = apiKeys.openai || '';
-        anthropicKeyInput.value = apiKeys.anthropic || '';
-        geminiKeyInput.value = apiKeys.gemini || '';
+        // Set values for each input field
+        for (const [provider, input] of Object.entries(apiKeyInputs)) {
+          if (apiKeys[provider]) {
+            input.value = apiKeys[provider];
+          }
+        }
       }
       
       // Load model configuration
       const modelConfig = await window.electronAPI.getModelConfig();
       if (modelConfig) {
-        reasoningModelSelect.value = modelConfig.reasoning || 'claude';
-        mathModelSelect.value = modelConfig.math || 'gemini';
-        programmingModelSelect.value = modelConfig.programming || 'gpt';
+        // Set values for each select element
+        for (const [mode, selector] of Object.entries(modelSelectors)) {
+          if (modelConfig[mode]) {
+            selector.value = modelConfig[mode];
+          } else {
+            // Set default values if nothing is configured
+            switch (mode) {
+              case 'reasoning':
+                selector.value = 'deepseek-v3';
+                break;
+              case 'math':
+                selector.value = 'deepseek-v3';
+                break;
+              case 'programming':
+                selector.value = 'deepseek-coder';
+                break;
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+      showNotification('Error loading settings. Please try again.', 'error');
     }
   }
   
@@ -195,11 +208,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     element.className = `api-key-status ${type}`;
   }
   
-  // Function to clear all status messages
-  function clearStatusMessages() {
-    openaiKeyStatus.textContent = '';
-    anthropicKeyStatus.textContent = '';
-    geminiKeyStatus.textContent = '';
+  // Function to show a notification
+  function showNotification(message, type) {
+    // Remove any existing notifications
+    const existingNotifications = document.querySelectorAll('.settings-notification');
+    existingNotifications.forEach(notification => {
+      document.body.removeChild(notification);
+    });
+    
+    // Create and show the notification
+    const notification = document.createElement('div');
+    notification.className = `settings-notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Remove notification after a delay
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    }, 3000);
   }
 });
 
@@ -230,6 +258,20 @@ style.textContent = `
   @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
+  }
+  
+  .subsection-header {
+    color: #bbbbbb;
+    font-size: 16px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+  }
+  
+  .subsection-description {
+    color: #888888;
+    font-size: 13px;
+    margin-bottom: 15px;
+    font-style: italic;
   }
 `;
 document.head.appendChild(style);

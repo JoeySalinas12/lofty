@@ -83,6 +83,12 @@
             <option value="programming">Programming</option>
           </select>
         </div>
+        <div class="model-selector">
+          <select id="model-dropdown">
+            <!-- Will be populated dynamically based on selected mode -->
+            <option value="loading">Loading models...</option>
+          </select>
+        </div>
       </div>
       
       <div class="chat-container" id="chat-messages">
@@ -106,6 +112,13 @@
   <div id="context-menu" class="context-menu">
     <div class="context-menu-item" id="rename-chat">Rename Chat</div>
     <div class="context-menu-item" id="delete-chat">Delete Chat</div>
+  </div>
+
+  <!-- Model info tooltip -->
+  <div id="model-info-tooltip" class="model-info-tooltip">
+    <div class="tooltip-header"></div>
+    <div class="tooltip-description"></div>
+    <div class="tooltip-status"></div>
   </div>
 
   <script src="renderer.js"></script>

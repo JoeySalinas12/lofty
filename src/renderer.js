@@ -18,9 +18,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Store model configuration - loaded from settings
   let modelConfig = null;
+  let availableModels = {};
+  let apiKeys = {};
+  
+  // Store current selected model details
+  let currentModel = {
+    id: null,
+    name: null,
+    isPaid: false
+  };
 
   // Get UI elements
   const modeDropdown = document.getElementById('mode-dropdown');
+  const modelDropdown = document.getElementById('model-dropdown');
   const chatMessages = document.getElementById('chat-messages');
   const messageInput = document.getElementById('message-input-field');
   const sendButton = document.getElementById('send-message-btn');
@@ -37,9 +47,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logout-btn');
   const settingsBtn = document.getElementById('settings-btn');
   const userProfile = document.getElementById('user-profile');
+  const modelInfoTooltip = document.getElementById('model-info-tooltip');
   
-  // Load model configuration
+  // Load model configuration and API keys
   await loadModelConfig();
+  await loadApiKeys();
   
   // Set up user popup toggle
   userProfile.addEventListener('click', (event) => {
@@ -58,6 +70,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('click', (event) => {
     if (!userProfile.contains(event.target) && userPopup.style.display === 'block') {
       userPopup.style.display = 'none';
+    }
+    
+    // Hide model tooltip when clicking elsewhere
+    if (!modelDropdown.contains(event.target)) {
+      modelInfoTooltip.classList.remove('visible');
     }
   });
   
@@ -86,15 +103,266 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       modelConfig = await window.electronAPI.getModelConfig();
       console.log('Model configuration loaded:', modelConfig);
+      
+      // Set default free models if none are configured
+      if (!modelConfig) {
+        modelConfig = {
+          reasoning: 'deepseek-v3',  // Free default
+          math: 'deepseek-v3',       // Free default
+          programming: 'deepseek-coder' // Free default
+        };
+      }
+      
+      // Update available models for each mode
+      await updateAvailableModelsForCurrentMode();
     } catch (error) {
       console.error('Error loading model configuration:', error);
+      
+      // Set default free models as fallback
       modelConfig = {
-        reasoning: 'claude',
-        math: 'gemini',
-        programming: 'gpt'
+        reasoning: 'deepseek-v3',  // Free default
+        math: 'deepseek-v3',       // Free default
+        programming: 'deepseek-coder' // Free default
       };
+      
+      await updateAvailableModelsForCurrentMode();
     }
   }
+  
+  // Function to load API keys
+  async function loadApiKeys() {
+    try {
+      apiKeys = await window.electronAPI.getApiKeys();
+      console.log('API keys loaded');
+      
+      // After loading API keys, update the model dropdown to reflect available models
+      updateModelDropdown();
+    } catch (error) {
+      console.error('Error loading API keys:', error);
+      apiKeys = {}; // Empty object as fallback
+      
+      // Still update the model dropdown, but it will only show free models
+      updateModelDropdown();
+    }
+  }
+  
+  // Function to update available models when mode changes
+  async function updateAvailableModelsForCurrentMode() {
+    const currentMode = modeDropdown.value;
+    
+    try {
+      // Use electronAPI to get models for the selected mode
+      const useCaseMapping = {
+        'reasoning': 'reasoning',
+        'math': 'math',
+        'programming': 'programming'
+      };
+      
+      const useCase = useCaseMapping[currentMode] || currentMode;
+      
+      // Placeholder for integration with model-config.js
+      // In a real implementation, we would get this from the main process
+      const models = {
+        'reasoning': [
+          { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isPaid: true, requiresApiKey: true, apiKeyName: 'anthropic', description: 'Excels at reasoning and technical writing with strong factual accuracy.' },
+          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', isPaid: true, requiresApiKey: true, apiKeyName: 'openai', description: 'Powerful for programming, summarization, and creative content.' },
+          { id: 'gemini-2-pro', name: 'Gemini 2 Pro', provider: 'Google', isPaid: true, requiresApiKey: true, apiKeyName: 'gemini', description: 'Good at math and science with strong multilingual capabilities.' },
+          { id: 'deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Strong at programming, math & reasoning; free tier option.' },
+          { id: 'openchat-3.5', name: 'OpenChat 3.5', provider: 'OpenChat', isPaid: false, requiresApiKey: false, description: 'Great for technical writing and creative content; free to use.' },
+          { id: 'yi-1.5-34b', name: 'Yi 1.5 34B', provider: '01.AI', isPaid: false, requiresApiKey: false, description: 'Strong performance on business tasks and conversational abilities.' },
+        ],
+        'math': [
+          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', isPaid: true, requiresApiKey: true, apiKeyName: 'openai', description: 'Powerful for programming, summarization, and creative content.' },
+          { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isPaid: true, requiresApiKey: true, apiKeyName: 'anthropic', description: 'Excels at reasoning and technical writing with strong factual accuracy.' },
+          { id: 'gemini-2-pro', name: 'Gemini 2 Pro', provider: 'Google', isPaid: true, requiresApiKey: true, apiKeyName: 'gemini', description: 'Good at math and science with strong multilingual capabilities.' },
+          { id: 'deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Strong at programming, math & reasoning; free tier option.' },
+          { id: 'yi-1.5-34b', name: 'Yi 1.5 34B', provider: '01.AI', isPaid: false, requiresApiKey: false, description: 'Strong performance on business tasks and conversational abilities.' },
+        ],
+        'programming': [
+          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', isPaid: true, requiresApiKey: true, apiKeyName: 'openai', description: 'Powerful for programming, summarization, and creative content.' },
+          { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isPaid: true, requiresApiKey: true, apiKeyName: 'anthropic', description: 'Excels at reasoning and technical writing with strong factual accuracy.' },
+          { id: 'deepseek-coder', name: 'DeepSeek Coder', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Specialized for code generation and programming tasks.' },
+          { id: 'deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Strong at programming, math & reasoning; free tier option.' },
+          { id: 'openchat-3.5', name: 'OpenChat 3.5', provider: 'OpenChat', isPaid: false, requiresApiKey: false, description: 'Great for technical writing and creative content; free to use.' }
+        ]
+      };
+      
+      // Store available models for the current mode
+      availableModels[currentMode] = models[currentMode] || [];
+      
+      // Update the model dropdown
+      updateModelDropdown();
+    } catch (error) {
+      console.error('Error getting models for mode:', error);
+      // Set an empty array as fallback
+      availableModels[currentMode] = [];
+      updateModelDropdown();
+    }
+  }
+  
+  // Function to update the model dropdown based on available models
+  function updateModelDropdown() {
+    const currentMode = modeDropdown.value;
+    const models = availableModels[currentMode] || [];
+    
+    // Clear current options
+    modelDropdown.innerHTML = '';
+    
+    // First add paid models group if any are available
+    const paidModels = models.filter(model => model.isPaid);
+    if (paidModels.length > 0) {
+      const paidGroup = document.createElement('optgroup');
+      paidGroup.label = 'Paid Models';
+      
+      paidModels.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = `${model.name} (${model.provider})`;
+        option.classList.add('paid-model');
+        
+        // Check if API key is required and available
+        if (model.requiresApiKey) {
+          const hasKey = apiKeys[model.apiKeyName] && apiKeys[model.apiKeyName].trim() !== '';
+          
+          if (!hasKey) {
+            option.disabled = true;
+            option.textContent += ' - Requires API Key';
+          }
+        }
+        
+        paidGroup.appendChild(option);
+      });
+      
+      modelDropdown.appendChild(paidGroup);
+    }
+    
+    // Then add free models group
+    const freeModels = models.filter(model => !model.isPaid);
+    if (freeModels.length > 0) {
+      const freeGroup = document.createElement('optgroup');
+      freeGroup.label = 'Free Models';
+      
+      freeModels.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = `${model.name} (${model.provider})`;
+        option.classList.add('free-model');
+        
+        // Check if API key is required but optional and available
+        if (model.requiresApiKey) {
+          const hasKey = apiKeys[model.apiKeyName] && apiKeys[model.apiKeyName].trim() !== '';
+          
+          if (!hasKey) {
+            // For free models, API keys are optional
+            option.textContent += ' - Optional API Key';
+          }
+        }
+        
+        freeGroup.appendChild(option);
+      });
+      
+      modelDropdown.appendChild(freeGroup);
+    }
+    
+    // Set the selected model based on model config or default to the first free model
+    if (modelConfig && modelConfig[currentMode]) {
+      const configuredModelId = modelConfig[currentMode];
+      
+      // Try to select the configured model
+      if (modelDropdown.querySelector(`option[value="${configuredModelId}"]`)) {
+        modelDropdown.value = configuredModelId;
+      } else {
+        // If the configured model is not available, select the first free model
+        const firstFreeOption = modelDropdown.querySelector('.free-model');
+        if (firstFreeOption) {
+          modelDropdown.value = firstFreeOption.value;
+        }
+      }
+    }
+    
+    // Update currentModel details based on selected option
+    updateCurrentModelDetails();
+  }
+  
+  // Update current model details based on selected option
+  function updateCurrentModelDetails() {
+    const selectedModelId = modelDropdown.value;
+    const currentMode = modeDropdown.value;
+    const models = availableModels[currentMode] || [];
+    
+    // Find the selected model in the available models
+    const selectedModel = models.find(model => model.id === selectedModelId);
+    
+    if (selectedModel) {
+      currentModel = {
+        id: selectedModel.id,
+        name: selectedModel.name,
+        isPaid: selectedModel.isPaid,
+        provider: selectedModel.provider,
+        requiresApiKey: selectedModel.requiresApiKey,
+        apiKeyName: selectedModel.apiKeyName,
+        description: selectedModel.description
+      };
+      
+      // Update the input placeholder based on the selected model
+      messageInput.placeholder = `Message ${selectedModel.name}`;
+      
+      // Update the logo text
+      const logoText = document.getElementById('logo-text');
+      logoText.textContent = selectedModel.name;
+    }
+  }
+  
+  // Function to show model info tooltip
+  function showModelTooltip(event) {
+    const selectedModelId = modelDropdown.value;
+    const currentMode = modeDropdown.value;
+    const models = availableModels[currentMode] || [];
+    
+    // Find the selected model in the available models
+    const selectedModel = models.find(model => model.id === selectedModelId);
+    
+    if (selectedModel) {
+      const tooltipHeader = modelInfoTooltip.querySelector('.tooltip-header');
+      const tooltipDescription = modelInfoTooltip.querySelector('.tooltip-description');
+      const tooltipStatus = modelInfoTooltip.querySelector('.tooltip-status');
+      
+      // Set tooltip content
+      tooltipHeader.textContent = `${selectedModel.name} (${selectedModel.provider})`;
+      tooltipDescription.textContent = selectedModel.description || 'No description available.';
+      
+      // Set status
+      if (selectedModel.isPaid) {
+        tooltipStatus.textContent = 'Paid Model';
+        tooltipStatus.className = 'tooltip-status paid';
+        
+        // Check if API key is required and available
+        if (selectedModel.requiresApiKey) {
+          const hasKey = apiKeys[selectedModel.apiKeyName] && apiKeys[selectedModel.apiKeyName].trim() !== '';
+          
+          if (!hasKey) {
+            tooltipStatus.textContent = 'Requires API Key';
+            tooltipStatus.className = 'tooltip-status no-key';
+          }
+        }
+      } else {
+        tooltipStatus.textContent = 'Free Model';
+        tooltipStatus.className = 'tooltip-status free';
+      }
+      
+      // Position and show tooltip
+      const rect = modelDropdown.getBoundingClientRect();
+      modelInfoTooltip.style.top = `${rect.bottom + 10}px`;
+      modelInfoTooltip.style.left = `${rect.left}px`;
+      modelInfoTooltip.classList.add('visible');
+    }
+  }
+  
+  // Add event listener for model dropdown hover
+  modelDropdown.addEventListener('mouseenter', showModelTooltip);
+  modelDropdown.addEventListener('mouseleave', () => {
+    modelInfoTooltip.classList.remove('visible');
+  });
   
   // Function to load chat history from Supabase
   async function loadChatHistoryFromSupabase() {
@@ -119,7 +387,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               title: conversation.title || "Untitled Chat",
               mode: determineConversationMode(conversation.messages),
               messages: conversation.messages,
-              created_at: conversation.created_at
+              created_at: conversation.created_at,
+              // Add model information if available
+              model: determineConversationModel(conversation.messages)
             };
             console.log(`Added conversation: ${uniqueId} with ${conversation.messages.length} messages`);
           }
@@ -182,6 +452,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
+  // Function to determine the model of a conversation based on messages
+  function determineConversationModel(messages) {
+    // Look for bot messages that might have model info
+    const botMessages = messages.filter(msg => msg.type === 'bot' && msg.model);
+    
+    if (botMessages.length > 0) {
+      // Get the most commonly used model
+      const modelCounts = {};
+      botMessages.forEach(msg => {
+        modelCounts[msg.model] = (modelCounts[msg.model] || 0) + 1;
+      });
+      
+      // Find the most common model
+      const mostCommonModel = Object.keys(modelCounts).reduce((a, b) => 
+        modelCounts[a] > modelCounts[b] ? a : b
+      );
+      
+      return mostCommonModel;
+    }
+    
+    // Default to a free model if no model is found
+    return 'deepseek-v3';
+  }
+  
   // Function to determine the mode of a conversation based on messages
   function determineConversationMode(messages) {
     // Look for bot messages that might have model info
@@ -203,6 +497,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (mostCommonModel.includes('claude')) return 'reasoning';
       if (mostCommonModel.includes('gemini')) return 'math';
       if (mostCommonModel.includes('gpt')) return 'programming';
+      if (mostCommonModel.includes('deep') && mostCommonModel.includes('coder')) return 'programming';
+      if (mostCommonModel.includes('deep')) return 'reasoning';
     }
     
     // Default to reasoning
@@ -229,12 +525,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       chatItem.className = 'sidebar-item';
       chatItem.classList.toggle('active', chatId === currentChatId);
       chatItem.setAttribute('data-chat-id', chatId);
+      
+      // Add model indicator if available
+      const modelName = chat.model ? getModelDisplayName(chat.model) : '';
       chatItem.textContent = chat.title;
+      
       todayChats.appendChild(chatItem);
     });
     
     // Setup listeners
     setupChatItemListeners();
+  }
+  
+  // Helper function to get a display name for a model
+  function getModelDisplayName(modelId) {
+    // This is a basic mapping, ideally would come from the main process
+    const modelDisplayNames = {
+      'claude-3.5-sonnet': 'Claude',
+      'gpt-4-turbo': 'GPT-4',
+      'gemini-2-pro': 'Gemini',
+      'deepseek-v3': 'DeepSeek',
+      'deepseek-coder': 'DeepSeek Coder',
+      'openchat-3.5': 'OpenChat',
+      'yi-1.5-34b': 'Yi',
+      'gecko-3': 'Gecko'
+    };
+    
+    return modelDisplayNames[modelId] || modelId;
   }
   
   // Function to update user info in the sidebar
@@ -398,7 +715,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       chatHistory[currentChatId].mode = selectedMode;
     }
     
+    // Update UI and available models when mode changes
     updateUIForMode(selectedMode);
+    updateAvailableModelsForCurrentMode();
+  });
+  
+  // Listen for model changes
+  modelDropdown.addEventListener('change', (event) => {
+    // Update current model details
+    updateCurrentModelDetails();
+    
+    // Update UI for the selected model
+    updateUIForSelectedModel();
+    
+    // Store the model in the current chat
+    if (currentChatId && chatHistory[currentChatId]) {
+      chatHistory[currentChatId].model = modelDropdown.value;
+    }
   });
   
   // Listen for new message submission
@@ -411,6 +744,53 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Listen for new chat button click
   newChatButton.addEventListener('click', createNewChat);
+  
+  // Function to update UI for selected model
+  function updateUIForSelectedModel() {
+    // Update the logo and placeholder text
+    const logoText = document.getElementById('logo-text');
+    
+    if (currentModel && currentModel.name) {
+      logoText.textContent = currentModel.name;
+      messageInput.placeholder = `Message ${currentModel.name}`;
+    } else {
+      // Default fallback
+      logoText.textContent = 'Lofty';
+      messageInput.placeholder = 'Message AI';
+    }
+    
+    // Add sparkle effect if needed
+    addSparkleEffect();
+  }
+  
+  // Function to add sparkle effect to the logo
+  function addSparkleEffect() {
+    const logoText = document.getElementById('logo-text');
+    const modeSelectorContainer = document.querySelector('.mode-selector-container');
+    
+    // First remove any existing sparkle classes to reset animations
+    logoText.classList.remove('text-sparkle-effect');
+    if (modeSelectorContainer.classList.contains('sparkle-active')) {
+      modeSelectorContainer.classList.remove('sparkle-active');
+    }
+    
+    // Add the sparkle effect with a slight delay to allow for any transitions
+    setTimeout(() => {
+      // Force a reflow to restart animation
+      void logoText.offsetWidth;
+      void modeSelectorContainer.offsetWidth;
+      
+      // Add the sparkle effects - but NOT to the chat title
+      logoText.classList.add('text-sparkle-effect');
+      modeSelectorContainer.classList.add('sparkle-active');
+      
+      // Remove the effect after the animation completes
+      setTimeout(() => {
+        logoText.classList.remove('text-sparkle-effect');
+        modeSelectorContainer.classList.remove('sparkle-active');
+      }, 8000); // Animation visible for 8 seconds
+    }, 100); // Slightly increased delay
+  }
   
   // Function to load a specific chat
   function loadChat(chatId) {
@@ -439,9 +819,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update title
     currentChatTitle.textContent = chat.title;
     
-    // Update mode dropdown (including logo)
+    // Update mode dropdown and associated UI
     modeDropdown.value = chat.mode;
     updateUIForMode(chat.mode);
+    
+    // Update model dropdown with models for this mode
+    updateAvailableModelsForCurrentMode().then(() => {
+      // Set the model for this chat if available
+      if (chat.model) {
+        // Check if this model is in the dropdown
+        if (modelDropdown.querySelector(`option[value="${chat.model}"]`)) {
+          modelDropdown.value = chat.model;
+          updateCurrentModelDetails();
+          updateUIForSelectedModel();
+        }
+      }
+    });
     
     // Clear and update chat messages
     chatMessages.innerHTML = '';
@@ -451,7 +844,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Populate with messages
     chat.messages.forEach(message => {
-      appendMessage(message.type, message.content, message.formatted);
+      appendMessage(message.type, message.content, message.formatted, message.model);
     });
     
     // Scroll to bottom
@@ -464,30 +857,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => {
       chatMessages.classList.remove('fade-in');
     }, 500);
-  }
-  
-  // Function to map app modes to LLM models
-  async function getModeModel(mode) {
-    try {
-      // Get model from settings
-      return await window.electronAPI.getModeModel(mode);
-    } catch (error) {
-      console.error('Error getting model for mode:', error);
-      
-      // Use local model config or fallback defaults
-      if (modelConfig && modelConfig[mode]) {
-        return modelConfig[mode];
-      }
-      
-      // Fallback defaults
-      const defaultModels = {
-        'reasoning': 'claude',
-        'math': 'gemini',
-        'programming': 'gpt'
-      };
-      
-      return defaultModels[mode] || 'claude';
-    }
   }
   
   // Function to send a new message
@@ -522,9 +891,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
     try {
-      // Get the appropriate model based on the current mode
+      // Get the current mode and selected model
       const currentMode = chatHistory[currentChatId].mode;
-      const modelToUse = await getModeModel(currentMode);
+      const modelToUse = modelDropdown.value;
+      
+      // Store the selected model in the chat
+      chatHistory[currentChatId].model = modelToUse;
       
       // Query the LLM through the IPC bridge
       const botResponse = await window.electronAPI.queryLLM(modelToUse, messageText, currentChatId);
@@ -533,7 +905,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       chatMessages.removeChild(loadingMessage);
       
       // Add the response to the UI with formatting
-      appendMessage('bot', botResponse, true);
+      appendMessage('bot', botResponse, true, modelToUse);
       
       // Add the response to chat history
       chatHistory[currentChatId].messages.push({ 
@@ -583,6 +955,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatHistory[newChatId] = {
       title: 'New Chat',
       mode: modeDropdown.value,
+      model: modelDropdown.value, // Store currently selected model
       messages: [],
       created_at: new Date().toISOString()
     };
@@ -626,11 +999,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   // Function to append a message to the chat
-  function appendMessage(type, content, formatted = false) {
+  function appendMessage(type, content, formatted = false, modelId = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}-message`;
     
     const contentDiv = document.createElement('div');
+    
+    // Add model badge for bot messages if model is provided
+    if (type === 'bot' && modelId) {
+      const currentMode = modeDropdown.value;
+      const models = availableModels[currentMode] || [];
+      const modelDetails = models.find(model => model.id === modelId);
+      
+      if (modelDetails) {
+        // Create model badge
+        const badgeClass = modelDetails.isPaid ? 'paid' : 'free';
+        const modelName = modelDetails.name;
+        const providerName = modelDetails.provider;
+        
+        // Add model information to message div
+        messageDiv.setAttribute('data-model', modelId);
+        messageDiv.setAttribute('data-provider', providerName);
+      }
+    }
     
     // Check if we should format this message as markdown
     if (formatted && type === 'bot') {
@@ -644,6 +1035,26 @@ document.addEventListener('DOMContentLoaded', async () => {
           
           // Add copy buttons to code blocks
           addCopyCodeButtons(contentDiv);
+          
+          // Add model badge if available
+          if (modelId) {
+            const currentMode = modeDropdown.value;
+            const models = availableModels[currentMode] || [];
+            const modelDetails = models.find(model => model.id === modelId);
+            
+            if (modelDetails) {
+              const badgeType = modelDetails.isPaid ? 'paid' : 'free';
+              const badge = document.createElement('span');
+              badge.className = `model-badge ${badgeType}`;
+              badge.textContent = modelDetails.name;
+              
+              // Add to message metadata
+              const metadata = document.createElement('div');
+              metadata.className = 'message-metadata';
+              metadata.appendChild(badge);
+              messageDiv.appendChild(metadata);
+            }
+          }
         })
         .catch(error => {
           console.error('Error formatting markdown:', error);
@@ -729,8 +1140,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Function to update UI based on the selected mode
   async function updateUIForMode(mode) {
     const container = document.querySelector('.container');
-    const logoText = document.getElementById('logo-text');
-    const modeSelectorContainer = document.querySelector('.mode-selector-container');
     
     // Reset classes
     container.classList.remove('mode-reasoning', 'mode-math', 'mode-programming');
@@ -738,62 +1147,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add class for the selected mode
     container.classList.add(`mode-${mode}`);
 
-    // Update logo text based on the current model but keep rainbow gradient
-    // Get the model for this mode from the settings
-    const currentModel = await getModeModel(mode);
+    // Update the available models for this mode
+    await updateAvailableModelsForCurrentMode();
     
-    switch (currentModel) {
-      case 'claude':
-        logoText.textContent = 'Claude';
-        break;
-      case 'gemini':
-        logoText.textContent = 'Gemini';
-        break;
-      case 'gpt':
-        logoText.textContent = 'ChatGPT';
-        break;
-      default:
-        logoText.textContent = 'ChatGPT';
-    }
-    
-    // Add sparkle effect to the logo and mode selector only
-    // First remove any existing sparkle classes to reset animations
-    logoText.classList.remove('text-sparkle-effect');
-    if (modeSelectorContainer.classList.contains('sparkle-active')) {
-      modeSelectorContainer.classList.remove('sparkle-active');
-    }
-    
-    // Add the sparkle effect with a slight delay to allow for any transitions
-    setTimeout(() => {
-      // Force a reflow to restart animation
-      void logoText.offsetWidth;
-      void modeSelectorContainer.offsetWidth;
-      
-      // Add the sparkle effects - but NOT to the chat title
-      logoText.classList.add('text-sparkle-effect');
-      modeSelectorContainer.classList.add('sparkle-active');
-      
-      // Remove the effect after the animation completes
-      setTimeout(() => {
-        logoText.classList.remove('text-sparkle-effect');
-        modeSelectorContainer.classList.remove('sparkle-active');
-      }, 8000); // Animation visible for 8 seconds
-    }, 100); // Slightly increased delay
-    
-    // Update input placeholder based on mode - use format from the image
-    switch (currentModel) {
-      case 'claude':
-        messageInput.placeholder = 'Message Claude';
-        break;
-      case 'gemini':
-        messageInput.placeholder = 'Message Gemini';
-        break;
-      case 'gpt':
-        messageInput.placeholder = 'Message ChatGPT';
-        break;
-      default:
-        messageInput.placeholder = 'Message ChatGPT';
-    }
+    // Add sparkle effect - implemented in updateUIForSelectedModel
+    updateUIForSelectedModel();
   }
   
   // Listen for API key changes
@@ -807,6 +1165,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (currentChatId && chatHistory[currentChatId]) {
         updateUIForMode(chatHistory[currentChatId].mode);
       }
+    } else if (event.key === 'lofty_api_keys_updated') {
+      console.log('API keys changed, reloading...');
+      await loadApiKeys();
+      
+      // Update the model dropdown to reflect new available models
+      updateModelDropdown();
     }
   });
 });
