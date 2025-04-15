@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="markdown-styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <link rel="stylesheet" href="math-styles.css">
+  <link rel="stylesheet" href="use-case-styles.css">
   <style>
     /* Add custom background directly in the HTML for immediate effect */
     body::before {
@@ -31,7 +32,6 @@
   </style>
 </head>
 <body>
-  <!-- Rest of your HTML content remains unchanged -->
   <div class="container">
     <!-- Custom window drag area -->
     <div class="drag-region"></div>
@@ -78,28 +78,40 @@
       <div class="mode-selector-container">
         <div class="mode-selector">
           <select id="mode-dropdown">
-            <option value="reasoning">Reasoning</option>
-            <option value="math">Math</option>
             <option value="programming">Programming</option>
+            <option value="technical-writing">Technical Writing</option>
+            <option value="math">Math / Reasoning</option>
+            <option value="productivity">Productivity / Business</option>
+            <option value="science">Science / Factual</option>
+            <option value="customer-support">Customer Support</option>
+            <option value="creative-writing">Creative Writing</option>
+            <option value="summarization">Summarization</option>
+            <option value="multilingual">Multilingual</option>
+            <option value="academic">Academic / Research</option>
           </select>
         </div>
-        <div class="model-selector">
-          <select id="model-dropdown">
-            <!-- Will be populated dynamically based on selected mode -->
-            <option value="loading">Loading models...</option>
-          </select>
+        
+        <!-- Model indicator that shows which model is being used -->
+        <div class="active-model-indicator">
+          <span id="active-model-name">DeepSeek V3</span>
+          <span id="active-model-badge" class="model-badge free">Free</span>
+          
+          <!-- Tooltip that shows on hover -->
+          <div class="model-info-tooltip">
+            <div class="tooltip-header" id="tooltip-model-name">DeepSeek V3</div>
+            <div class="tooltip-description" id="tooltip-model-description">
+              Strong at programming, math & reasoning; free tier option.
+            </div>
+            <div class="tooltip-footer">
+              <span class="tooltip-status free" id="tooltip-model-status">Free Model</span>
+              <span class="tooltip-provider" id="tooltip-model-provider">by DeepSeek</span>
+            </div>
+          </div>
         </div>
-      </div>
-      
-      <!-- Model info tooltip -->
-      <div id="model-info-tooltip" class="model-info-tooltip">
-        <div class="tooltip-header"></div>
-        <div class="tooltip-description"></div>
-        <div class="tooltip-status"></div>
       </div>
       
       <div class="chat-container" id="chat-messages">
-        <!-- Chat messages will appear here -->
+        <!-- Loading state shown initially, will be replaced with actual chat content -->
         <div id="loading-chat" class="loading-container">
           <div class="loading-spinner"></div>
           <div class="loading-text">Loading your conversation...</div>
@@ -113,18 +125,12 @@
         </div>
       </div>
     </div>
+  </div>
   
   <!-- Context menu for right-click actions -->
   <div id="context-menu" class="context-menu">
     <div class="context-menu-item" id="rename-chat">Rename Chat</div>
     <div class="context-menu-item" id="delete-chat">Delete Chat</div>
-  </div>
-
-  <!-- Model info tooltip -->
-  <div id="model-info-tooltip" class="model-info-tooltip">
-    <div class="tooltip-header"></div>
-    <div class="tooltip-description"></div>
-    <div class="tooltip-status"></div>
   </div>
 
   <script src="renderer.js"></script>

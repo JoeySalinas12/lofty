@@ -18,19 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Store model configuration - loaded from settings
   let modelConfig = null;
-  let availableModels = {};
-  let apiKeys = {};
   
-  // Store current selected model details
-  let currentModel = {
-    id: null,
-    name: null,
-    isPaid: false
-  };
-
   // Get UI elements
   const modeDropdown = document.getElementById('mode-dropdown');
-  const modelDropdown = document.getElementById('model-dropdown');
   const chatMessages = document.getElementById('chat-messages');
   const messageInput = document.getElementById('message-input-field');
   const sendButton = document.getElementById('send-message-btn');
@@ -47,11 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logout-btn');
   const settingsBtn = document.getElementById('settings-btn');
   const userProfile = document.getElementById('user-profile');
-  const modelInfoTooltip = document.getElementById('model-info-tooltip');
   
-  // Load model configuration and API keys
+  // Load model configuration
   await loadModelConfig();
-  await loadApiKeys();
   
   // Set up user popup toggle
   userProfile.addEventListener('click', (event) => {
@@ -70,11 +58,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('click', (event) => {
     if (!userProfile.contains(event.target) && userPopup.style.display === 'block') {
       userPopup.style.display = 'none';
-    }
-    
-    // Hide model tooltip when clicking elsewhere
-    if (!modelDropdown.contains(event.target)) {
-      modelInfoTooltip.classList.remove('visible');
     }
   });
   
@@ -97,269 +80,209 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Setup event listeners for chat items
   setupChatItemListeners();
-  
+
+  // Function to update the current model based on selected mode
+  async function updateModelForCurrentMode(mode) {
+    try {
+      console.log(`Updating model for mode: ${mode}`);
+      
+      // Get the configured model for this mode from settings
+      const modelId = await window.electronAPI.getModeModel(mode);
+      
+      // Get model details to update the UI
+      const modelDetails = await getModelDetails(modelId);
+      
+      // Update the UI to show which model is being used
+      updateActiveModelIndicator(modelDetails);
+      
+      // Store the current model in the chat if it exists
+      if (currentChatId && chatHistory[currentChatId]) {
+        chatHistory[currentChatId].model = modelId;
+      }
+      
+      // Return the model ID for other functions to use
+      return modelId;
+    } catch (error) {
+      console.error('Error updating model for mode:', error);
+      
+      // Fallback to free models if there's an error
+      const fallbackModels = {
+        'programming': 'deepseek-v3',
+        'technical-writing': 'openchat-3.5',
+        'math': 'deepseek-v3',
+        'productivity': 'gecko-3',
+        'science': 'deepseek-v3',
+        'customer-support': 'openchat-3.5',
+        'creative-writing': 'openchat-3.5',
+        'summarization': 'openchat-3.5',
+        'multilingual': 'gecko-2-mini',
+        'academic': 'openchat-3.5'
+      };
+      
+      // Set a fallback model
+      const fallbackModelId = fallbackModels[mode] || 'deepseek-v3';
+      
+      // Get basic model details for the fallback
+      const fallbackDetails = {
+        id: fallbackModelId,
+        name: getFriendlyModelName(fallbackModelId),
+        isPaid: false,
+        provider: getProviderName(fallbackModelId),
+        description: 'Fallback model (free tier)'
+      };
+      
+      // Update the UI with the fallback model
+      updateActiveModelIndicator(fallbackDetails);
+      
+      // Store the fallback model in the chat
+      if (currentChatId && chatHistory[currentChatId]) {
+        chatHistory[currentChatId].model = fallbackModelId;
+      }
+      
+      return fallbackModelId;
+    }
+  }
+
+  // Function to get provider name from model ID
+  function getProviderName(modelId) {
+    const providers = {
+      'deepseek': 'DeepSeek',
+      'openchat': 'OpenChat',
+      'yi': '01.AI',
+      'gecko': 'Gecko',
+      'claude': 'Anthropic',
+      'gpt': 'OpenAI',
+      'gemini': 'Google'
+    };
+    
+    // Try to extract provider from model ID
+    for (const [key, value] of Object.entries(providers)) {
+      if (modelId.includes(key)) {
+        return value;
+      }
+    }
+    
+    return 'Unknown Provider';
+  }
+
+  // Function to update the active model indicator in the UI
+  function updateActiveModelIndicator(modelDetails) {
+    const activeModelName = document.getElementById('active-model-name');
+    const activeModelBadge = document.getElementById('active-model-badge');
+    const tooltipModelName = document.getElementById('tooltip-model-name');
+    const tooltipModelDescription = document.getElementById('tooltip-model-description');
+    const tooltipModelStatus = document.getElementById('tooltip-model-status');
+    const tooltipModelProvider = document.getElementById('tooltip-model-provider');
+    
+    if (!activeModelName || !activeModelBadge) return;
+    
+    // Update the model name
+    activeModelName.textContent = modelDetails.name || getFriendlyModelName(modelDetails.id);
+    
+    // Update message input placeholder
+    messageInput.placeholder = `Message ${modelDetails.name || getFriendlyModelName(modelDetails.id)}...`;
+    
+    // Update the badge
+    if (modelDetails.isPaid) {
+      activeModelBadge.textContent = 'Paid';
+      activeModelBadge.className = 'model-badge paid';
+    } else {
+      activeModelBadge.textContent = 'Free';
+      activeModelBadge.className = 'model-badge free';
+    }
+    
+    // Update tooltip if elements exist
+    if (tooltipModelName && tooltipModelDescription && tooltipModelStatus && tooltipModelProvider) {
+      tooltipModelName.textContent = modelDetails.name || getFriendlyModelName(modelDetails.id);
+      tooltipModelDescription.textContent = modelDetails.description || 'No description available';
+      
+      if (modelDetails.isPaid) {
+        tooltipModelStatus.textContent = 'Paid Model';
+        tooltipModelStatus.className = 'tooltip-status paid';
+      } else {
+        tooltipModelStatus.textContent = 'Free Model';
+        tooltipModelStatus.className = 'tooltip-status free';
+      }
+      
+      tooltipModelProvider.textContent = `by ${modelDetails.provider || getProviderName(modelDetails.id)}`;
+    }
+  }
+
   // Function to load model configuration
   async function loadModelConfig() {
     try {
       modelConfig = await window.electronAPI.getModelConfig();
       console.log('Model configuration loaded:', modelConfig);
-      
-      // Set default free models if none are configured
-      if (!modelConfig) {
-        modelConfig = {
-          reasoning: 'deepseek-v3',  // Free default
-          math: 'deepseek-v3',       // Free default
-          programming: 'deepseek-coder' // Free default
-        };
-      }
-      
-      // Update available models for each mode
-      await updateAvailableModelsForCurrentMode();
     } catch (error) {
       console.error('Error loading model configuration:', error);
-      
-      // Set default free models as fallback
-      modelConfig = {
-        reasoning: 'deepseek-v3',  // Free default
-        math: 'deepseek-v3',       // Free default
-        programming: 'deepseek-coder' // Free default
-      };
-      
-      await updateAvailableModelsForCurrentMode();
+      modelConfig = null;
     }
   }
-  
-  // Function to load API keys
-  async function loadApiKeys() {
+
+  // Helper function to get friendly model names
+  function getFriendlyModelName(modelId) {
+    const modelNames = {
+      'claude-3.5-sonnet': 'Claude 3.5 Sonnet',
+      'gpt-4-turbo': 'GPT-4 Turbo',
+      'gpt-4.5': 'GPT-4.5',
+      'gemini-2-pro': 'Gemini 2 Pro',
+      'deepseek-v3': 'DeepSeek V3',
+      'deepseek-coder': 'DeepSeek Coder',
+      'openchat-3.5': 'OpenChat 3.5',
+      'yi-1.5-34b': 'Yi 1.5 34B',
+      'gecko-3': 'Gecko 3',
+      'gecko-2-mini': 'Gecko 2 Mini'
+    };
+    
+    return modelNames[modelId] || modelId;
+  }
+
+  // Helper function to get model details
+  async function getModelDetails(modelId) {
     try {
-      apiKeys = await window.electronAPI.getApiKeys();
-      console.log('API keys loaded');
+      // Try to get model details from the main process
+      const details = await window.electronAPI.getModelDetails(modelId);
       
-      // After loading API keys, update the model dropdown to reflect available models
-      updateModelDropdown();
-    } catch (error) {
-      console.error('Error loading API keys:', error);
-      apiKeys = {}; // Empty object as fallback
-      
-      // Still update the model dropdown, but it will only show free models
-      updateModelDropdown();
-    }
-  }
-  
-  // Function to update available models when mode changes
-  async function updateAvailableModelsForCurrentMode() {
-    const currentMode = modeDropdown.value;
-    
-    try {
-      // Use electronAPI to get models for the selected mode
-      const useCaseMapping = {
-        'reasoning': 'reasoning',
-        'math': 'math',
-        'programming': 'programming'
-      };
-      
-      const useCase = useCaseMapping[currentMode] || currentMode;
-      
-      // Get models from main process
-      const models = await window.electronAPI.getModelsForMode(useCase, false) || {
-        'reasoning': [
-          { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isPaid: true, requiresApiKey: true, apiKeyName: 'anthropic', description: 'Excels at reasoning and technical writing with strong factual accuracy.' },
-          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', isPaid: true, requiresApiKey: true, apiKeyName: 'openai', description: 'Powerful for programming, summarization, and creative content.' },
-          { id: 'gemini-2-pro', name: 'Gemini 2 Pro', provider: 'Google', isPaid: true, requiresApiKey: true, apiKeyName: 'gemini', description: 'Good at math and science with strong multilingual capabilities.' },
-          { id: 'deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Strong at programming, math & reasoning; free tier option.' },
-          { id: 'openchat-3.5', name: 'OpenChat 3.5', provider: 'OpenChat', isPaid: false, requiresApiKey: false, description: 'Great for technical writing and creative content; free to use.' },
-          { id: 'yi-1.5-34b', name: 'Yi 1.5 34B', provider: '01.AI', isPaid: false, requiresApiKey: false, description: 'Strong performance on business tasks and conversational abilities.' },
-        ],
-        'math': [
-          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', isPaid: true, requiresApiKey: true, apiKeyName: 'openai', description: 'Powerful for programming, summarization, and creative content.' },
-          { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isPaid: true, requiresApiKey: true, apiKeyName: 'anthropic', description: 'Excels at reasoning and technical writing with strong factual accuracy.' },
-          { id: 'gemini-2-pro', name: 'Gemini 2 Pro', provider: 'Google', isPaid: true, requiresApiKey: true, apiKeyName: 'gemini', description: 'Good at math and science with strong multilingual capabilities.' },
-          { id: 'deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Strong at programming, math & reasoning; free tier option.' },
-          { id: 'yi-1.5-34b', name: 'Yi 1.5 34B', provider: '01.AI', isPaid: false, requiresApiKey: false, description: 'Strong performance on business tasks and conversational abilities.' },
-        ],
-        'programming': [
-          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', isPaid: true, requiresApiKey: true, apiKeyName: 'openai', description: 'Powerful for programming, summarization, and creative content.' },
-          { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isPaid: true, requiresApiKey: true, apiKeyName: 'anthropic', description: 'Excels at reasoning and technical writing with strong factual accuracy.' },
-          { id: 'deepseek-coder', name: 'DeepSeek Coder', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Specialized for code generation and programming tasks.' },
-          { id: 'deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek', isPaid: false, requiresApiKey: false, description: 'Strong at programming, math & reasoning; free tier option.' },
-          { id: 'openchat-3.5', name: 'OpenChat 3.5', provider: 'OpenChat', isPaid: false, requiresApiKey: false, description: 'Great for technical writing and creative content; free to use.' }
-        ]
-      }[useCase] || [];
-      
-      // Store available models for the current mode
-      availableModels[currentMode] = models;
-      
-      // Update the model dropdown
-      updateModelDropdown();
-    } catch (error) {
-      console.error('Error getting models for mode:', error);
-      // Set an empty array as fallback
-      availableModels[currentMode] = [];
-      updateModelDropdown();
-    }
-  }
-  
-  // Function to update the model dropdown based on available models
-  function updateModelDropdown() {
-    const currentMode = modeDropdown.value;
-    const models = availableModels[currentMode] || [];
-    
-    // Clear current options
-    modelDropdown.innerHTML = '';
-    
-    // First add paid models group if any are available
-    const paidModels = models.filter(model => model.isPaid);
-    if (paidModels.length > 0) {
-      const paidGroup = document.createElement('optgroup');
-      paidGroup.label = 'Paid Models';
-      
-      paidModels.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.id;
-        option.textContent = `${model.name} (${model.provider})`;
-        option.classList.add('paid-model');
-        
-        // Check if API key is required and available
-        if (model.requiresApiKey) {
-          const hasKey = apiKeys[model.apiKeyName] && apiKeys[model.apiKeyName].trim() !== '';
-          
-          if (!hasKey) {
-            option.disabled = true;
-            option.textContent += ' - Requires API Key';
-          }
-        }
-        
-        paidGroup.appendChild(option);
-      });
-      
-      modelDropdown.appendChild(paidGroup);
-    }
-    
-    // Then add free models group
-    const freeModels = models.filter(model => !model.isPaid);
-    if (freeModels.length > 0) {
-      const freeGroup = document.createElement('optgroup');
-      freeGroup.label = 'Free Models';
-      
-      freeModels.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.id;
-        option.textContent = `${model.name} (${model.provider})`;
-        option.classList.add('free-model');
-        
-        // Check if API key is required but optional and available
-        if (model.requiresApiKey) {
-          const hasKey = apiKeys[model.apiKeyName] && apiKeys[model.apiKeyName].trim() !== '';
-          
-          if (!hasKey) {
-            // For free models, API keys are optional
-            option.textContent += ' - Optional API Key';
-          }
-        }
-        
-        freeGroup.appendChild(option);
-      });
-      
-      modelDropdown.appendChild(freeGroup);
-    }
-    
-    // Set the selected model based on model config or default to the first free model
-    if (modelConfig && modelConfig[currentMode]) {
-      const configuredModelId = modelConfig[currentMode];
-      
-      // Try to select the configured model
-      if (modelDropdown.querySelector(`option[value="${configuredModelId}"]`)) {
-        modelDropdown.value = configuredModelId;
-      } else {
-        // If the configured model is not available, select the first free model
-        const firstFreeOption = modelDropdown.querySelector('.free-model');
-        if (firstFreeOption) {
-          modelDropdown.value = firstFreeOption.value;
-        }
+      if (details) {
+        return details;
       }
+    } catch (error) {
+      console.error('Error getting model details from main process:', error);
     }
     
-    // Update currentModel details based on selected option
-    updateCurrentModelDetails();
-  }
-  
-  // Update current model details based on selected option
-  function updateCurrentModelDetails() {
-    const selectedModelId = modelDropdown.value;
-    const currentMode = modeDropdown.value;
-    const models = availableModels[currentMode] || [];
+    // Fallback to local mapping if main process fails
+    const modelTypes = {
+      'claude-3.5-sonnet': { isPaid: true, provider: 'Anthropic', description: 'Excels at reasoning and technical writing with strong factual accuracy.' },
+      'gpt-4-turbo': { isPaid: true, provider: 'OpenAI', description: 'Powerful for programming, summarization, and creative content.' },
+      'gpt-4.5': { isPaid: true, provider: 'OpenAI', description: 'Latest OpenAI model with improved capabilities across all tasks.' },
+      'gemini-2-pro': { isPaid: true, provider: 'Google', description: 'Good at math and science with strong multilingual capabilities.' },
+      'deepseek-v3': { isPaid: false, provider: 'DeepSeek', description: 'Strong at programming, math & reasoning; free tier option.' },
+      'deepseek-coder': { isPaid: false, provider: 'DeepSeek', description: 'Specialized for code generation and programming tasks.' },
+      'openchat-3.5': { isPaid: false, provider: 'OpenChat', description: 'Great for technical writing and creative content; free to use.' },
+      'yi-1.5-34b': { isPaid: false, provider: '01.AI', description: 'Strong performance on business tasks and conversational abilities.' },
+      'gecko-3': { isPaid: false, provider: 'Gecko', description: 'Efficient for productivity and business applications.' },
+      'gecko-2-mini': { isPaid: false, provider: 'Gecko', description: 'Optimized for multilingual tasks with efficient performance.' }
+    };
     
-    // Find the selected model in the available models
-    const selectedModel = models.find(model => model.id === selectedModelId);
-    
-    if (selectedModel) {
-      currentModel = {
-        id: selectedModel.id,
-        name: selectedModel.name,
-        isPaid: selectedModel.isPaid,
-        provider: selectedModel.provider,
-        requiresApiKey: selectedModel.requiresApiKey,
-        apiKeyName: selectedModel.apiKeyName,
-        description: selectedModel.description
+    // Check if we have details for this model
+    if (modelTypes[modelId]) {
+      return {
+        id: modelId,
+        name: getFriendlyModelName(modelId),
+        ...modelTypes[modelId]
       };
-      
-      // Update the input placeholder based on the selected model
-      messageInput.placeholder = `Message ${selectedModel.name}`;
-      
-      // Update the logo text
-      const logoText = document.getElementById('logo-text');
-      logoText.textContent = selectedModel.name;
     }
-  }
-  
-  // Function to show model info tooltip
-  function showModelTooltip(event) {
-    const selectedModelId = modelDropdown.value;
-    const currentMode = modeDropdown.value;
-    const models = availableModels[currentMode] || [];
     
-    // Find the selected model in the available models
-    const selectedModel = models.find(model => model.id === selectedModelId);
-    
-    if (selectedModel) {
-      const tooltipHeader = modelInfoTooltip.querySelector('.tooltip-header');
-      const tooltipDescription = modelInfoTooltip.querySelector('.tooltip-description');
-      const tooltipStatus = modelInfoTooltip.querySelector('.tooltip-status');
-      
-      // Set tooltip content
-      tooltipHeader.textContent = `${selectedModel.name} (${selectedModel.provider})`;
-      tooltipDescription.textContent = selectedModel.description || 'No description available.';
-      
-      // Set status
-      if (selectedModel.isPaid) {
-        tooltipStatus.textContent = 'Paid Model';
-        tooltipStatus.className = 'tooltip-status paid';
-        
-        // Check if API key is required and available
-        if (selectedModel.requiresApiKey) {
-          const hasKey = apiKeys[selectedModel.apiKeyName] && apiKeys[selectedModel.apiKeyName].trim() !== '';
-          
-          if (!hasKey) {
-            tooltipStatus.textContent = 'Requires API Key';
-            tooltipStatus.className = 'tooltip-status no-key';
-          }
-        }
-      } else {
-        tooltipStatus.textContent = 'Free Model';
-        tooltipStatus.className = 'tooltip-status free';
-      }
-      
-      // Make tooltip visible - CSS will handle positioning
-      modelInfoTooltip.classList.add('visible');
-    }
+    // Return a basic object if we don't have details
+    return {
+      id: modelId,
+      name: getFriendlyModelName(modelId),
+      isPaid: false, // Assume free by default
+      provider: getProviderName(modelId),
+      description: 'Model details not available'
+    };
   }
-  
-  // Add event listener for model dropdown hover
-  modelDropdown.addEventListener('mouseenter', showModelTooltip);
-  modelDropdown.addEventListener('mouseleave', () => {
-    modelInfoTooltip.classList.remove('visible');
-  });
-  
+
   // Function to load chat history from Supabase
   async function loadChatHistoryFromSupabase() {
     try {
@@ -447,7 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       createNewChat();
     }
   }
-  
+
   // Function to determine the model of a conversation based on messages
   function determineConversationModel(messages) {
     // Look for bot messages that might have model info
@@ -471,7 +394,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Default to a free model if no model is found
     return 'deepseek-v3';
   }
-  
+
   // Function to determine the mode of a conversation based on messages
   function determineConversationMode(messages) {
     // Look for bot messages that might have model info
@@ -489,18 +412,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         modelCounts[a] > modelCounts[b] ? a : b
       );
       
-      // Map model to mode
-      if (mostCommonModel.includes('claude')) return 'reasoning';
-      if (mostCommonModel.includes('gemini')) return 'math';
+      // Map model to mode using simple rules
+      if (mostCommonModel.includes('claude')) return 'technical-writing';
       if (mostCommonModel.includes('gpt')) return 'programming';
-      if (mostCommonModel.includes('deep') && mostCommonModel.includes('coder')) return 'programming';
-      if (mostCommonModel.includes('deep')) return 'reasoning';
+      if (mostCommonModel.includes('gemini')) return 'math';
+      if (mostCommonModel.includes('deepseek') && mostCommonModel.includes('coder')) return 'programming';
+      if (mostCommonModel.includes('deepseek')) return 'math';
+      if (mostCommonModel.includes('openchat')) return 'creative-writing';
+      if (mostCommonModel.includes('yi')) return 'customer-support';
+      if (mostCommonModel.includes('gecko')) return 'productivity';
     }
     
-    // Default to reasoning
-    return 'reasoning';
+    // Default to programming
+    return 'programming';
   }
-  
+
   // Function to update the sidebar with chat history
   function updateChatSidebar() {
     // Clear existing chats (except loading indicator)
@@ -532,24 +458,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup listeners
     setupChatItemListeners();
   }
-  
+
   // Helper function to get a display name for a model
   function getModelDisplayName(modelId) {
     // This is a basic mapping, ideally would come from the main process
     const modelDisplayNames = {
       'claude-3.5-sonnet': 'Claude',
       'gpt-4-turbo': 'GPT-4',
+      'gpt-4.5': 'GPT-4.5',
       'gemini-2-pro': 'Gemini',
       'deepseek-v3': 'DeepSeek',
       'deepseek-coder': 'DeepSeek Coder',
       'openchat-3.5': 'OpenChat',
       'yi-1.5-34b': 'Yi',
-      'gecko-3': 'Gecko'
+      'gecko-3': 'Gecko',
+      'gecko-2-mini': 'Gecko Mini'
     };
     
     return modelDisplayNames[modelId] || modelId;
   }
-  
+
   // Function to update user info in the sidebar
   function updateUserInfo(user) {
     if (!user) return;
@@ -570,7 +498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       .toUpperCase();
     userAvatar.textContent = initials;
   }
-  
+
   // Function to set up event listeners for chat history items
   function setupChatItemListeners() {
     const chatHistoryItems = document.querySelectorAll('.sidebar-item:not(#loading-sidebar)');
@@ -593,12 +521,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
   }
-  
+
   // Close context menu when clicking elsewhere
   document.addEventListener('click', () => {
     contextMenu.style.display = 'none';
   });
-  
+
   // Delete chat when clicking the delete option
   deleteChat.addEventListener('click', async () => {
     if (contextMenuTargetId) {
@@ -652,7 +580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       contextMenu.style.display = 'none';
     }
   });
-  
+
   // Function to show an input field for renaming
   function showRenameInput(chatId) {
     // Find the chat item
@@ -690,7 +618,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
-  
+
   // Function to finish the renaming process
   function finishRenaming(chatId, newTitle) {
     if (newTitle.trim() !== '') {
@@ -701,35 +629,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       chatItem.textContent = chatHistory[chatId].title;
     }
   }
-  
+
   // Listen for mode changes
-  modeDropdown.addEventListener('change', (event) => {
+  modeDropdown.addEventListener('change', async (event) => {
     const selectedMode = event.target.value;
     window.electronAPI.changeMode(selectedMode);
     
+    // Store the new mode in the current chat
     if (currentChatId && chatHistory[currentChatId]) {
       chatHistory[currentChatId].mode = selectedMode;
     }
     
-    // Update UI and available models when mode changes
+    // Update UI for the selected mode
     updateUIForMode(selectedMode);
-    updateAvailableModelsForCurrentMode();
-  });
-  
-  // Listen for model changes
-  modelDropdown.addEventListener('change', (event) => {
-    // Update current model details
-    updateCurrentModelDetails();
     
-    // Update UI for the selected model
-    updateUIForSelectedModel();
-    
-    // Store the model in the current chat
-    if (currentChatId && chatHistory[currentChatId]) {
-      chatHistory[currentChatId].model = modelDropdown.value;
-    }
+    // Update the model based on the selected mode
+    await updateModelForCurrentMode(selectedMode);
   });
-  
+
   // Listen for new message submission
   sendButton.addEventListener('click', sendMessage);
   messageInput.addEventListener('keypress', (event) => {
@@ -741,22 +658,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Listen for new chat button click
   newChatButton.addEventListener('click', createNewChat);
 
-  // Function to update UI for selected model
-  function updateUIForSelectedModel() {
-    // Update the logo and placeholder text
+  // Function to update UI based on the selected mode
+  async function updateUIForMode(mode) {
+    const container = document.querySelector('.container');
+    
+    // Remove all mode classes first
+    container.classList.remove(
+      'mode-programming', 
+      'mode-technical-writing', 
+      'mode-math', 
+      'mode-productivity',
+      'mode-science',
+      'mode-customer-support',
+      'mode-creative-writing',
+      'mode-summarization',
+      'mode-multilingual',
+      'mode-academic'
+    );
+    
+    // Add class for the selected mode
+    container.classList.add(`mode-${mode}`);
+
+    // Update the model for this mode
+    await updateModelForCurrentMode(mode);
+    
+    // Update the logo text
+    updateLogoText();
+  }
+
+  // Function to update the logo text based on the current model
+  function updateLogoText() {
     const logoText = document.getElementById('logo-text');
+    const activeModelName = document.getElementById('active-model-name');
     
-    if (currentModel && currentModel.name) {
-      logoText.textContent = currentModel.name;
-      messageInput.placeholder = `Message ${currentModel.name}`;
-    } else {
-      // Default fallback
-      logoText.textContent = 'Lofty';
-      messageInput.placeholder = 'Message AI';
+    if (logoText && activeModelName) {
+      logoText.textContent = activeModelName.textContent;
+      
+      // Add sparkle effect to the logo
+      addSparkleEffect();
     }
-    
-    // Add sparkle effect if needed
-    addSparkleEffect();
   }
 
   // Function to add sparkle effect to the logo
@@ -815,20 +755,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update title
     currentChatTitle.textContent = chat.title;
     
-    // Update mode dropdown and associated UI
+    // Update mode dropdown
     modeDropdown.value = chat.mode;
-    updateUIForMode(chat.mode);
     
-    // Update model dropdown with models for this mode
-    updateAvailableModelsForCurrentMode().then(() => {
-      // Set the model for this chat if available
+    // Update UI for the selected mode
+    updateUIForMode(chat.mode).then(() => {
+      // Update the model for this mode
       if (chat.model) {
-        // Check if this model is in the dropdown
-        if (modelDropdown.querySelector(`option[value="${chat.model}"]`)) {
-          modelDropdown.value = chat.model;
-          updateCurrentModelDetails();
-          updateUIForSelectedModel();
-        }
+        // If chat already has a model, use it to update the UI
+        getModelDetails(chat.model).then(modelDetails => {
+          updateActiveModelIndicator(modelDetails);
+        });
       }
     });
     
@@ -855,7 +792,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 500);
   }
 
-  // Function to send a new message
+  // Function to send a message
   async function sendMessage() {
     const messageText = messageInput.value.trim();
     if (messageText === '') return;
@@ -887,12 +824,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
     try {
-      // Get the current mode and selected model
+      // Get the current mode and get the configured model for it
       const currentMode = chatHistory[currentChatId].mode;
-      const modelToUse = modelDropdown.value;
+      const modelToUse = await updateModelForCurrentMode(currentMode);
       
       // Store the selected model in the chat
       chatHistory[currentChatId].model = modelToUse;
+      
+      // Log which model is being used
+      console.log(`Using model ${modelToUse} for ${currentMode} mode`);
       
       // Query the LLM through the IPC bridge
       const botResponse = await window.electronAPI.queryLLM(modelToUse, messageText, currentChatId);
@@ -947,11 +887,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Generate a new chat ID
     const newChatId = `chat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
+    // Get current mode
+    const currentMode = modeDropdown.value;
+    
     // Add to chat history
     chatHistory[newChatId] = {
       title: 'New Chat',
-      mode: modeDropdown.value,
-      model: modelDropdown.value, // Store currently selected model
+      mode: currentMode,
+      model: null, // Will be set when first message is sent
       messages: [],
       created_at: new Date().toISOString()
     };
@@ -992,6 +935,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update UI
     chatMessages.innerHTML = '';
     currentChatTitle.textContent = 'New Chat';
+    
+    // Update model for the current mode
+    updateModelForCurrentMode(currentMode);
   }
 
   // Function to append a message to the chat
@@ -1003,20 +949,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Add model badge for bot messages if model is provided
     if (type === 'bot' && modelId) {
-      const currentMode = modeDropdown.value;
-      const models = availableModels[currentMode] || [];
-      const modelDetails = models.find(model => model.id === modelId);
-      
-      if (modelDetails) {
-        // Create model badge
-        const badgeClass = modelDetails.isPaid ? 'paid' : 'free';
-        const modelName = modelDetails.name;
-        const providerName = modelDetails.provider;
-        
-        // Add model information to message div
-        messageDiv.setAttribute('data-model', modelId);
-        messageDiv.setAttribute('data-provider', providerName);
-      }
+      messageDiv.setAttribute('data-model', modelId);
     }
     
     // Check if we should format this message as markdown
@@ -1034,22 +967,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           
           // Add model badge if available
           if (modelId) {
-            const currentMode = modeDropdown.value;
-            const models = availableModels[currentMode] || [];
-            const modelDetails = models.find(model => model.id === modelId);
-            
-            if (modelDetails) {
-              const badgeType = modelDetails.isPaid ? 'paid' : 'free';
-              const badge = document.createElement('span');
-              badge.className = `model-badge ${badgeType}`;
-              badge.textContent = modelDetails.name;
-              
+            // Get model details
+            getModelDetails(modelId).then(modelDetails => {
               // Add to message metadata
               const metadata = document.createElement('div');
               metadata.className = 'message-metadata';
+              
+              const badge = document.createElement('span');
+              badge.className = `message-badge ${modelDetails.isPaid ? 'paid' : 'free'}`;
+              badge.innerHTML = `<span class="badge-icon">•</span> ${modelDetails.name || getFriendlyModelName(modelId)}`;
+              
               metadata.appendChild(badge);
               messageDiv.appendChild(metadata);
-            }
+            });
           }
         })
         .catch(error => {
@@ -1133,23 +1063,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Function to update UI based on the selected mode
-  async function updateUIForMode(mode) {
-    const container = document.querySelector('.container');
-    
-    // Reset classes
-    container.classList.remove('mode-reasoning', 'mode-math', 'mode-programming');
-    
-    // Add class for the selected mode
-    container.classList.add(`mode-${mode}`);
-
-    // Update the available models for this mode
-    await updateAvailableModelsForCurrentMode();
-    
-    // Add sparkle effect - implemented in updateUIForSelectedModel
-    updateUIForSelectedModel();
-  }
-
   // Listen for API key changes
   // This approach allows settings changes to be reflected immediately in the current window
   window.addEventListener('storage', async (event) => {
@@ -1161,12 +1074,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (currentChatId && chatHistory[currentChatId]) {
         updateUIForMode(chatHistory[currentChatId].mode);
       }
-    } else if (event.key === 'lofty_api_keys_updated') {
-      console.log('API keys changed, reloading...');
-      await loadApiKeys();
-      
-      // Update the model dropdown to reflect new available models
-      updateModelDropdown();
     }
   });
   });

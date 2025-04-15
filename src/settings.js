@@ -30,11 +30,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     gecko: document.getElementById('gecko-key-status')
   };
   
-  // Model config selectors
+  // Model config selectors - updated with all use cases
   const modelSelectors = {
-    reasoning: document.getElementById('reasoning-model'),
+    programming: document.getElementById('programming-model'),
+    'technical-writing': document.getElementById('technical-writing-model'),
     math: document.getElementById('math-model'),
-    programming: document.getElementById('programming-model')
+    productivity: document.getElementById('productivity-model'),
+    science: document.getElementById('science-model'),
+    'customer-support': document.getElementById('customer-support-model'),
+    'creative-writing': document.getElementById('creative-writing-model'),
+    summarization: document.getElementById('summarization-model'),
+    multilingual: document.getElementById('multilingual-model'),
+    academic: document.getElementById('academic-model')
   };
   
   // Toggle password visibility buttons
@@ -56,7 +63,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Get all API key values
     for (const [provider, input] of Object.entries(apiKeyInputs)) {
-      apiKeys[provider] = input.value.trim();
+      if (input) {
+        apiKeys[provider] = input.value.trim();
+      }
     }
     
     try {
@@ -66,20 +75,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (result.success) {
         // Show success message for each field
         for (const status of Object.values(apiKeyStatuses)) {
-          showStatusMessage(status, 'Saved successfully!', 'success');
+          if (status) {
+            showStatusMessage(status, 'Saved successfully!', 'success');
+          }
         }
+        
+        showNotification('API keys saved successfully', 'success');
       } else {
         // Show error message for each field
         for (const status of Object.values(apiKeyStatuses)) {
-          showStatusMessage(status, 'Failed to save', 'error');
+          if (status) {
+            showStatusMessage(status, 'Failed to save', 'error');
+          }
         }
+        
+        showNotification('Failed to save API keys', 'error');
       }
     } catch (error) {
       console.error('Error saving API keys:', error);
       // Show error message for each field
       for (const status of Object.values(apiKeyStatuses)) {
-        showStatusMessage(status, 'Error saving keys', 'error');
+        if (status) {
+          showStatusMessage(status, 'Error saving keys', 'error');
+        }
       }
+      
+      showNotification('Error saving API keys: ' + error.message, 'error');
     } finally {
       // Re-enable the save button
       saveApiKeysBtn.disabled = false;
@@ -88,8 +109,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Clear status messages after a delay
       setTimeout(() => {
         for (const status of Object.values(apiKeyStatuses)) {
-          status.textContent = '';
-          status.className = 'api-key-status';
+          if (status) {
+            status.textContent = '';
+            status.className = 'api-key-status';
+          }
         }
       }, 3000);
     }
@@ -108,7 +131,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Get all model selections
     for (const [mode, selector] of Object.entries(modelSelectors)) {
-      modelConfig[mode] = selector.value;
+      if (selector) {
+        modelConfig[mode] = selector.value;
+      }
     }
     
     try {
@@ -167,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (apiKeys) {
         // Set values for each input field
         for (const [provider, input] of Object.entries(apiKeyInputs)) {
-          if (apiKeys[provider]) {
+          if (input && apiKeys[provider]) {
             input.value = apiKeys[provider];
           }
         }
@@ -178,21 +203,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (modelConfig) {
         // Set values for each select element
         for (const [mode, selector] of Object.entries(modelSelectors)) {
-          if (modelConfig[mode]) {
+          if (selector && modelConfig[mode]) {
             selector.value = modelConfig[mode];
-          } else {
-            // Set default values if nothing is configured
-            switch (mode) {
-              case 'reasoning':
-                selector.value = 'deepseek-v3';
-                break;
-              case 'math':
-                selector.value = 'deepseek-v3';
-                break;
-              case 'programming':
-                selector.value = 'deepseek-coder';
-                break;
-            }
+          } else if (selector) {
+            // Set default values based on the PDF recommendations if not configured
+            const defaults = {
+              'programming': 'deepseek-v3',
+              'technical-writing': 'openchat-3.5',
+              'math': 'deepseek-v3',
+              'productivity': 'gecko-3',
+              'science': 'deepseek-v3',
+              'customer-support': 'openchat-3.5',
+              'creative-writing': 'openchat-3.5',
+              'summarization': 'openchat-3.5',
+              'multilingual': 'gecko-2-mini',
+              'academic': 'openchat-3.5'
+            };
+            
+            selector.value = defaults[mode] || selector.options[0].value;
           }
         }
       }
@@ -204,8 +232,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Function to display status messages
   function showStatusMessage(element, message, type) {
-    element.textContent = message;
-    element.className = `api-key-status ${type}`;
+    if (element) {
+      element.textContent = message;
+      element.className = `api-key-status ${type}`;
+    }
   }
   
   // Function to show a notification
@@ -249,10 +279,12 @@ style.textContent = `
   
   .settings-notification.success {
     background-color: #4CAF50;
+    box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
   }
   
   .settings-notification.error {
     background-color: #ff6b6b;
+    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.3);
   }
   
   @keyframes slideIn {
@@ -272,6 +304,40 @@ style.textContent = `
     font-size: 13px;
     margin-bottom: 15px;
     font-style: italic;
+  }
+  
+  /* Improve dropdown styling */
+  .model-selector {
+    background-color: #3a3a3a;
+    color: #ffffff;
+    border: 1px solid #484848;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+  }
+  
+  .model-selector:focus {
+    outline: none;
+    border-color: #4a76a8;
+    box-shadow: 0 0 0 2px rgba(74, 118, 168, 0.2);
+  }
+  
+  .model-selector option,
+  .model-selector optgroup {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+  }
+  
+  .model-selector optgroup {
+    font-weight: 600;
+    padding: 5px 0;
   }
 `;
 document.head.appendChild(style);

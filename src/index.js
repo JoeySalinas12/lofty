@@ -1,474 +1,67 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-const LLMBridge = require('./llm-bridge');
-const authService = require('./auth-service');
-const chatService = require('./chat-service');
-const keyStoreService = require('./key-store-service');
-const notificationService = require('./notification-service');
-const messageFormatter = require('./message-formatter-math');
-const modelConfig = require('./model-config');
+// Add the following functions to setupChatHandlers() in your src/index.js file:
 
-// Handle creating/removing shortcuts on Windows when installing/uninstalling
-if (require('electron-squirrel-startup')) {
-  app.quit();
-}
-
-// Keep a global reference of the window object to prevent garbage collection
-let mainWindow;
-let authWindow;
-let settingsWindow;
-
-// Check if user is authenticated and show appropriate window
-const createAuthWindow = () => {
-  // Close the main window if it exists
-  if (mainWindow) {
-    mainWindow.close();
-    mainWindow = null;
-  }
-
-  authWindow = new BrowserWindow({
-    width: 480,
-    height: 650, // Increased to accommodate the full name field
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    },
-    backgroundColor: '#1e1e1e',
-    titleBarStyle: 'hiddenInset',
-    autoHideMenuBar: true,
-    frame: false,
-    resizable: false,
-  });
-
-  // Load the login HTML file
-  authWindow.loadFile(path.join(__dirname, 'login.html'));
-  
-  // For development/debugging
-  // authWindow.webContents.openDevTools();
-};
-
-const createMainWindow = () => {
-  // Close the auth window if it exists
-  if (authWindow) {
-    authWindow.close();
-    authWindow = null;
-  }
-
-  // Create the browser window
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    },
-    backgroundColor: 'rgba(30, 30, 30, 0.85)', // Change to rgba with transparency
-    titleBarStyle: 'hiddenInset',
-    autoHideMenuBar: true,
-    frame: false,
-    transparent: true, // This is required for transparency
-    vibrancy: 'under-window', // Only works on macOS
-  });
-
-  // Load the index.html file
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
-
-  // Open the DevTools in development
-  // mainWindow.webContents.openDevTools();
-  
-  // Handle window control events
-  ipcMain.on('window-minimize', () => {
-    if (mainWindow) mainWindow.minimize();
-    if (authWindow) authWindow.minimize();
-    if (settingsWindow) settingsWindow.minimize();
-  });
-  
-  ipcMain.on('window-maximize', () => {
-    if (mainWindow) {
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
+// Handle getting model details
+ipcMain.handle('get-model-details', async (event, modelId) => {
+  try {
+    const details = modelConfig.getModelDetails(modelId);
+    
+    if (details) {
+      // Enrich with API key availability
+      const apiKeys = await keyStoreService.getApiKeys();
+      
+      if (details.requiresApiKey) {
+        const apiKeyName = details.apiKeyName;
+        details.hasApiKey = !!(apiKeys[apiKeyName] && apiKeys[apiKeyName].trim() !== '');
       } else {
-        mainWindow.maximize();
+        details.hasApiKey = true; // No API key required
       }
+      
+      return details;
     }
-  });
-  
-  ipcMain.on('window-close', () => {
-    if (mainWindow) mainWindow.close();
-    if (authWindow) authWindow.close();
-    if (settingsWindow) settingsWindow.close();
-  });
-};
-
-// Create settings window
-const createSettingsWindow = () => {
-  // Create the settings window if it doesn't exist
-  if (settingsWindow) {
-    settingsWindow.focus();
-    return;
-  }
-  
-  // Base window options
-  const windowOptions = {
-    width: 700,
-    height: 650,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    },
-    backgroundColor: '#1e1e1e',
-    modal: false,
-  };
-
-  // Platform-specific settings
-  if (process.platform === 'darwin') {
-    // On macOS - enable native frame but with custom styling
-    windowOptions.titleBarStyle = 'hiddenInset';
-    windowOptions.trafficLightPosition = { x: 10, y: 10 }; // Adjust traffic light position
-    windowOptions.vibrancy = 'under-window'; // Add vibrancy effect
-    windowOptions.frame = true; // Use native frame
-  } else {
-    // On Windows/Linux - use frameless with custom controls
-    windowOptions.frame = false;
-    windowOptions.autoHideMenuBar = true;
-  }
-  
-  settingsWindow = new BrowserWindow(windowOptions);
-  
-  // Explicitly set draggable behavior for macOS
-  if (process.platform === 'darwin') {
-    // Set the whole window to be draggable
-    settingsWindow.setMovable(true);
-  }
-  
-  // Load the settings HTML file
-  settingsWindow.loadFile(path.join(__dirname, 'settings.html'));
-  
-  // For development/debugging
-  // settingsWindow.webContents.openDevTools();
-  
-  // Clean up when window is closed
-  settingsWindow.on('closed', () => {
-    settingsWindow = null;
-  });
-  
-  // Handle window control events specifically for the settings window
-  settingsWindow.on('blur', () => {
-    // Re-enable dragging when window loses focus
-    if (process.platform === 'darwin') {
-      settingsWindow.setMovable(true);
-    }
-  });
-};
-
-// Create window when Electron has finished initialization
-app.on('ready', async () => {
-  // Initialize auth service first
-  await authService.initialize();
-
-  // Check if user is authenticated
-  if (authService.isAuthenticated()) {
-    createMainWindow();
-  } else {
-    createAuthWindow();
-  }
-
-  // Set up authentication IPC handlers
-  setupAuthHandlers();
-  setupChatHandlers();
-  setupSettingsHandlers();
-  setupMarkdownHandler();
-});
-
-// Quit when all windows are closed, except on macOS
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting model details:', error);
+    return null;
   }
 });
 
-app.on('activate', () => {
-  // On macOS re-create a window when the dock icon is clicked and no windows are open
-  if (BrowserWindow.getAllWindows().length === 0) {
-    if (authService.isAuthenticated()) {
-      createMainWindow();
-    } else {
-      createAuthWindow();
+// Replace the existing get-mode-model handler with this updated version
+ipcMain.handle('get-mode-model', async (event, mode) => {
+  try {
+    // Get the configured model from settings
+    const modelConf = await keyStoreService.getModelConfig();
+    
+    if (modelConf && modelConf[mode]) {
+      const configuredModelId = modelConf[mode];
+      
+      // Check if this is a paid model that requires an API key
+      const modelDetails = modelConfig.getModelDetails(configuredModelId);
+      
+      if (modelDetails && modelDetails.requiresApiKey) {
+        // Get API keys to check if we have the required key
+        const apiKeys = await keyStoreService.getApiKeys();
+        const apiKeyName = modelDetails.apiKeyName;
+        
+        // Check if the required API key is available
+        if (!apiKeys[apiKeyName] || apiKeys[apiKeyName].trim() === '') {
+          console.log(`API key for ${configuredModelId} is not available, using free alternative`);
+          
+          // Fall back to a free model for this use case
+          return modelConfig.getDefaultModelForUseCase(mode, true); // true = preferFree
+        }
+      }
+      
+      // If all checks pass, return the configured model
+      return configuredModelId;
     }
+    
+    // If no configured model, get the default for this use case
+    return modelConfig.getDefaultModelForUseCase(mode, true);
+  } catch (error) {
+    console.error('Error getting model for mode:', error);
+    
+    // Get the default free model for this mode as fallback
+    return modelConfig.getDefaultModelForUseCase(mode, true);
   }
 });
-
-function setupAuthHandlers() {
-  // Handle login
-  ipcMain.handle('auth-login', async (event, email, password) => {
-    console.log(`Login attempt for user: ${email}`);
-    const result = await authService.signInWithEmail(email, password);
-    
-    if (!result.error) {
-      console.log(`Login successful for user: ${email}`);
-      // Close auth window and open main window
-      createMainWindow();
-    } else {
-      console.log(`Login failed for user: ${email} - ${result.error}`);
-    }
-    
-    return result;
-  });
-
-  // Handle signup
-  ipcMain.handle('auth-signup', async (event, email, password, userData = {}) => {
-    console.log(`Signup attempt for user: ${email}`);
-    
-    // Validate userData if necessary
-    if (userData && typeof userData !== 'object') {
-      userData = {};
-    }
-    
-    const result = await authService.signUpWithEmail(email, password, userData);
-    
-    if (result.error) {
-      console.log(`Signup failed for user: ${email} - ${result.error}`);
-    } else {
-      console.log(`Signup successful for user: ${email}`);
-    }
-    
-    return result;
-  });
-
-  // Handle logout
-  ipcMain.handle('auth-logout', async () => {
-    console.log('User logout attempt');
-    const result = await authService.signOut();
-    
-    if (!result.error) {
-      console.log('User logged out successfully');
-      // Close main window and open auth window
-      createAuthWindow();
-    } else {
-      console.log(`Logout failed: ${result.error}`);
-    }
-    
-    return result;
-  });
-
-  // Check authentication status
-  ipcMain.handle('auth-check', () => {
-    const isAuthenticated = authService.isAuthenticated();
-    console.log(`Auth check: ${isAuthenticated ? 'User is authenticated' : 'User is not authenticated'}`);
-    return isAuthenticated;
-  });
-
-  // Get current user
-  ipcMain.handle('get-current-user', () => {
-    return authService.getCurrentUser();
-  });
-}
-
-function setupChatHandlers() {
-  // Handle LLM queries - updated to use stored API keys
-  ipcMain.handle('query-llm', async (event, modelId, prompt, chatId) => {
-    console.log(`Querying ${modelId} with prompt: ${prompt} for chat: ${chatId}`);
-    try {
-      // Pass the API keys to the LLM bridge
-      const apiKeys = await keyStoreService.exportKeysToEnv();
-      const response = await LLMBridge.queryLLM(modelId, prompt, apiKeys);
-      
-      // Save the message exchange to Supabase
-      if (authService.isAuthenticated()) {
-        await chatService.saveMessage(modelId, prompt, response, chatId);
-      }
-      
-      return response;
-    } catch (error) {
-      console.error(`Error querying LLM: ${error.message}`);
-      throw error; // This will be caught in the renderer
-    }
-  });
-
-  // Handle getting chat history
-  ipcMain.handle('get-chat-history', async () => {
-    if (!authService.isAuthenticated()) {
-      return { error: 'Not authenticated' };
-    }
-    
-    try {
-      const result = await chatService.getChatHistory();
-      
-      if (result.success && result.data) {
-        // Group the messages into conversations
-        const conversations = chatService.groupChatHistory(result.data, result.uniqueChatIds);
-        return { success: true, conversations };
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Error getting chat history:', error);
-      return { error: error.message };
-    }
-  });
-
-  // Handle loading a specific chat history
-  ipcMain.on('load-chat', (event, chatId) => {
-    console.log(`Loading chat: ${chatId}`);
-    // Loading chat is now handled in the renderer by storing chat history in memory
-  });
-
-  // Handle deleting a chat - updated to delete from Supabase
-  ipcMain.handle('delete-chat', async (event, chatId) => {
-    console.log(`Deleting chat: ${chatId}`);
-    if (authService.isAuthenticated()) {
-      const result = await chatService.deleteChat(chatId);
-      return result;
-    }
-    return { error: 'Not authenticated' };
-  });
-
-  // Handle mode changes if needed
-  ipcMain.on('mode-changed', (event, mode) => {
-    console.log(`Mode changed to: ${mode}`);
-  });
-  
-  // Handle getting model for mode
-  ipcMain.handle('get-mode-model', async (event, mode) => {
-    try {
-      const modelConf = await keyStoreService.getModelConfig();
-      return modelConf[mode] || getDefaultModel(mode);
-    } catch (error) {
-      console.error('Error getting model for mode:', error);
-      return getDefaultModel(mode);
-    }
-  });
-  
-  // NEW: Handle getting all models for a mode
-  ipcMain.handle('get-models-for-mode', async (event, mode, freeOnly = false) => {
-    try {
-      // Map app modes to use cases in model-config
-      const useCaseMapping = {
-        'reasoning': 'reasoning',
-        'math': 'math',
-        'programming': 'programming'
-      };
-      
-      const useCase = useCaseMapping[mode] || mode;
-      
-      // Get all models for this use case
-      const models = LLMBridge.getModelsForUseCase(useCase, freeOnly);
-      
-      return models;
-    } catch (error) {
-      console.error('Error getting models for mode:', error);
-      return [];
-    }
-  });
-  
-  // NEW: Handle API key validation
-  ipcMain.handle('validate-api-key', async (event, modelId, apiKey) => {
-    try {
-      const isValid = await LLMBridge.validateApiKey(modelId, apiKey);
-      return { valid: isValid };
-    } catch (error) {
-      console.error('Error validating API key:', error);
-      return { valid: false, error: error.message };
-    }
-  });
-}
-
-function setupSettingsHandlers() {
-  // Open settings window
-  ipcMain.on('open-settings', () => {
-    createSettingsWindow();
-  });
-  
-  // Close settings window
-  ipcMain.on('close-settings', () => {
-    if (settingsWindow) {
-      settingsWindow.close();
-      settingsWindow = null;
-    }
-  });
-  
-  // Save API keys
-  ipcMain.handle('save-api-keys', async (event, keys) => {
-    try {
-      const result = await keyStoreService.saveApiKeys(keys);
-      
-      // Notify all windows about the API key change
-      if (result) {
-        notificationService.notifyApiKeysChanged();
-      }
-      
-      return { success: result };
-    } catch (error) {
-      console.error('Error saving API keys:', error);
-      return { success: false, error: error.message };
-    }
-  });
-  
-  // Get API keys
-  ipcMain.handle('get-api-keys', async () => {
-    try {
-      return await keyStoreService.getApiKeys();
-    } catch (error) {
-      console.error('Error getting API keys:', error);
-      return { openai: '', anthropic: '', gemini: '', deepseek: '', openchat: '', yi: '', gecko: '' };
-    }
-  });
-  
-  // Save model configuration
-  ipcMain.handle('save-model-config', async (event, config) => {
-    try {
-      const result = await keyStoreService.saveModelConfig(config);
-      
-      // Notify all windows about the model config change
-      if (result) {
-        notificationService.notifyModelConfigChanged();
-      }
-      
-      return { success: result };
-    } catch (error) {
-      console.error('Error saving model configuration:', error);
-      return { success: false, error: error.message };
-    }
-  });
-  
-  // Get model configuration
-  ipcMain.handle('get-model-config', async () => {
-    try {
-      return await keyStoreService.getModelConfig();
-    } catch (error) {
-      console.error('Error getting model configuration:', error);
-      return getDefaultModelConfig();
-    }
-  });
-}
-
-// Add function to handle markdown formatting
-function setupMarkdownHandler() {
-  // Handle markdown formatting requests from renderer
-  ipcMain.handle('format-markdown', (event, text) => {
-    try {
-      console.log('Formatting markdown text');
-      return messageFormatter.formatMessage(text);
-    } catch (error) {
-      console.error('Error formatting markdown:', error);
-      return text; // Return original text on error
-    }
-  });
-}
-
-// Helper function to get default model for a mode
-function getDefaultModel(mode) {
-  return modelConfig.getDefaultModelForUseCase(mode, true); // Prefer free models by default
-}
-
-// Helper function to get default model configuration
-function getDefaultModelConfig() {
-  return {
-    reasoning: modelConfig.getDefaultModelForUseCase('reasoning', true),
-    math: modelConfig.getDefaultModelForUseCase('math', true),
-    programming: modelConfig.getDefaultModelForUseCase('programming', true)
-  };
-}

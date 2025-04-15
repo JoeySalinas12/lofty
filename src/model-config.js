@@ -28,6 +28,17 @@ const MODELS = {
       defaultFor: [],
       description: "Powerful for programming, summarization, and creative content."
     },
+    "gpt-4.5": {
+      id: "gpt-4.5",
+      name: "GPT-4.5",
+      provider: "OpenAI",
+      apiKeyName: "openai",
+      apiEnvName: "GPT_API_KEY",
+      requiresApiKey: true,
+      isPaid: true,
+      defaultFor: [],
+      description: "Latest OpenAI model with improved capabilities across all tasks."
+    },
     "claude-3.5-sonnet": {
       id: "claude-3.5-sonnet",
       name: "Claude 3.5 Sonnet",
@@ -44,7 +55,7 @@ const MODELS = {
       name: "Gemini 2 Pro",
       provider: "Google",
       apiKeyName: "gemini",
-      apiEnvName: "GEMINI_API_KEY", // Corrected the typo in the key name from GEMENI to GEMINI
+      apiEnvName: "GEMINI_API_KEY",
       requiresApiKey: true,
       isPaid: true,
       defaultFor: [],
@@ -60,8 +71,8 @@ const MODELS = {
       apiEnvName: "DEEPSEEK_API_KEY",
       requiresApiKey: false,
       isPaid: false,
-      defaultFor: ["programming", "math", "science"],
-      endpoint: "https://api.deepseek.com/v1/chat/completions", // Example endpoint
+      defaultFor: ["programming", "technical-writing", "math", "science", "academic"],
+      endpoint: "https://api.deepseek.com/v1/chat/completions",
       description: "Strong at programming, math & reasoning; free tier option."
     },
     "deepseek-coder": {
@@ -72,8 +83,8 @@ const MODELS = {
       apiEnvName: "DEEPSEEK_API_KEY",
       requiresApiKey: false,
       isPaid: false,
-      defaultFor: ["programming"],
-      endpoint: "https://api.deepseek.com/v1/coder/completions", // Example endpoint
+      defaultFor: [],
+      endpoint: "https://api.deepseek.com/v1/coder/completions",
       description: "Specialized for code generation and programming tasks."
     },
     "openchat-3.5": {
@@ -84,8 +95,8 @@ const MODELS = {
       apiEnvName: "OPENCHAT_API_KEY",
       requiresApiKey: false,
       isPaid: false,
-      defaultFor: ["technical", "creative"],
-      endpoint: "https://api.openchat.com/v1/chat/completions", // Example endpoint
+      defaultFor: ["customer-support", "creative-writing", "summarization"],
+      endpoint: "https://api.openchat.com/v1/chat/completions",
       description: "Great for technical writing and creative content; free to use."
     },
     "yi-1.5-34b": {
@@ -96,8 +107,8 @@ const MODELS = {
       apiEnvName: "YI_API_KEY",
       requiresApiKey: false,
       isPaid: false,
-      defaultFor: ["productivity", "dialogue"],
-      endpoint: "https://api.01.ai/v1/chat/completions", // Example endpoint
+      defaultFor: ["productivity"],
+      endpoint: "https://api.01.ai/v1/chat/completions",
       description: "Strong performance on business tasks and conversational abilities."
     },
     "gecko-3": {
@@ -108,30 +119,39 @@ const MODELS = {
       apiEnvName: "GECKO_API_KEY",
       requiresApiKey: false,
       isPaid: false,
-      defaultFor: ["productivity"],
-      endpoint: "https://api.gecko.ai/v1/chat/completions", // Example endpoint
+      defaultFor: [],
+      endpoint: "https://api.gecko.ai/v1/chat/completions",
       description: "Efficient for productivity and business applications."
+    },
+    "gecko-2-mini": {
+      id: "gecko-2-mini",
+      name: "Gecko 2 Mini",
+      provider: "Gecko",
+      apiKeyName: "gecko",
+      apiEnvName: "GECKO_API_KEY",
+      requiresApiKey: false,
+      isPaid: false,
+      defaultFor: ["multilingual"],
+      endpoint: "https://api.gecko.ai/v1/chat/completions",
+      description: "Optimized for multilingual tasks with efficient performance."
     }
   };
-  
+
   /**
    * Map of use cases to recommended models with both paid and free options
+   * Based on the April 2025 LLM recommendations PDF
    */
   const USE_CASE_MODELS = {
     "programming": {
       paid: ["claude-3.5-sonnet", "gpt-4-turbo"],
-      free: ["deepseek-coder", "deepseek-v3"]
+      free: ["deepseek-v3", "deepseek-coder"]
     },
     "technical-writing": {
-      paid: ["claude-3.5-sonnet", "gpt-4-turbo"],
+      paid: ["claude-3.5-sonnet", "gpt-4.5"],
       free: ["openchat-3.5", "deepseek-v3"]
     },
     "math": {
       paid: ["gpt-4-turbo", "claude-3.5-sonnet"],
-      free: ["deepseek-v3", "openchat-3.5"]
-    },
-    "reasoning": {
-      paid: ["claude-3.5-sonnet", "gpt-4-turbo"],
       free: ["deepseek-v3", "openchat-3.5"]
     },
     "productivity": {
@@ -155,15 +175,15 @@ const MODELS = {
       free: ["openchat-3.5", "yi-1.5-34b"]
     },
     "multilingual": {
-      paid: ["claude-3.5-sonnet", "gpt-4-turbo"],
-      free: ["gecko-3", "deepseek-v3"]
+      paid: ["claude-3.5-sonnet", "gpt-4.5"],
+      free: ["gecko-2-mini", "deepseek-v3"]
     },
     "academic": {
       paid: ["claude-3.5-sonnet", "gpt-4-turbo"],
       free: ["openchat-3.5", "deepseek-v3"]
     }
   };
-  
+
   /**
    * Get the default model for a given use case
    * @param {string} useCase - The use case
@@ -178,7 +198,7 @@ const MODELS = {
     const modelList = preferFree ? USE_CASE_MODELS[useCase].free : USE_CASE_MODELS[useCase].paid;
     return modelList[0]; // Return the first (best) model for this use case
   }
-  
+
   /**
    * Get model details by ID
    * @param {string} modelId - The model ID
@@ -187,7 +207,7 @@ const MODELS = {
   function getModelDetails(modelId) {
     return MODELS[modelId] || null;
   }
-  
+
   /**
    * Get all available models
    * @param {boolean} includeOnlyPaid - Whether to include only paid models
@@ -201,7 +221,7 @@ const MODELS = {
       return true;
     });
   }
-  
+
   /**
    * Map old model names to new model IDs for backward compatibility
    */
@@ -210,7 +230,7 @@ const MODELS = {
     "gpt": "gpt-4-turbo",
     "gemini": "gemini-2-pro"
   };
-  
+
   /**
    * Convert legacy model name to new model ID
    * @param {string} legacyName - Old model name
@@ -219,7 +239,7 @@ const MODELS = {
   function convertLegacyModelName(legacyName) {
     return LEGACY_MODEL_MAPPING[legacyName] || legacyName;
   }
-  
+
   module.exports = {
     MODELS,
     USE_CASE_MODELS,
