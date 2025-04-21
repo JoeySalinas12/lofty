@@ -66,15 +66,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Call the login method from the preload API
         const result = await window.electronAPI.login(email, password);
         
-        if (result.error) {
+        if (result.user) {
+          // Login successful - explicitly request window close
+          loginError.style.color = '#4CAF50';
+          loginError.textContent = 'Login successful!';
+          
+          // Explicitly request window close after a short delay
+          setTimeout(() => {
+            window.electronAPI.closeLoginWindow();
+          }, 500);
+        } else if (result.error) {
           // Show error message
           loginError.textContent = result.error;
           submitButton.disabled = false;
           submitButton.textContent = 'Login';
-        } else {
-          // Success - the main window will be opened by the main process
-          loginError.style.color = '#4CAF50';
-          loginError.textContent = 'Login successful!';
         }
       } catch (error) {
         // Handle any unexpected errors

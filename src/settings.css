@@ -29,7 +29,7 @@
 
 .settings-container {
   width: 100%;
-  max-width: 700px;
+  max-width: 900px;
   height: 90vh;
   max-height: 700px;
   background-color: #2a2a2a;
@@ -40,6 +40,7 @@
   animation: fadeIn 0.5s ease-out;
   position: relative;
   z-index: 1; /* Lower than the drag region */
+  overflow: hidden;
 }
 
 @keyframes fadeIn {
@@ -51,7 +52,7 @@
   padding: 20px;
   border-bottom: 1px solid #383838;
   display: flex;
-  justify-content: center; /* Center the title since we removed the close button */
+  justify-content: space-between;
   align-items: center;
   -webkit-app-region: drag; /* Make the header draggable as well */
 }
@@ -70,23 +71,112 @@
   -webkit-app-region: no-drag; /* Make sure the text can be selected */
 }
 
-/* Rest of the styles remain the same */
-.settings-sections {
+.close-button {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  -webkit-app-region: no-drag;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Settings content area - updated for sidebar layout */
+.settings-content {
+  display: flex;
   flex: 1;
-  padding: 20px;
+  overflow: hidden;
+}
+
+/* Sidebar styles */
+.settings-sidebar {
+  width: 220px;
+  background-color: #262626;
+  border-right: 1px solid #383838;
+  padding: 20px 0;
   overflow-y: auto;
 }
 
-.settings-section {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #383838;
+.sidebar-tab {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  border-left: 3px solid transparent;
 }
 
-.settings-section:last-child {
-  border-bottom: none;
+.sidebar-tab svg {
+  margin-right: 12px;
+  color: #999;
+  transition: color 0.2s ease;
 }
 
+.sidebar-tab:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.sidebar-tab:hover svg {
+  color: #bbb;
+}
+
+.sidebar-tab.active {
+  background-color: rgba(74, 118, 168, 0.1);
+  color: #fff;
+  border-left-color: #4a76a8;
+}
+
+.sidebar-tab.active svg {
+  color: #4a76a8;
+}
+
+/* Tab content area */
+.settings-tab-content {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+  position: relative;
+}
+
+.tab-pane {
+  padding: 25px;
+  display: none;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* Styling for scrollable tab content */
+.settings-tab-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-tab-content::-webkit-scrollbar-track {
+  background: rgba(65, 65, 65, 0.1);
+  border-radius: 4px;
+}
+
+.settings-tab-content::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.settings-tab-content::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Rest of the styles remain the same */
 .section-header {
   color: #dddddd;
   font-size: 18px;
@@ -218,25 +308,6 @@
   font-size: 12px;
 }
 
-/* Custom scrollbar for settings */
-.settings-sections::-webkit-scrollbar {
-  width: 8px;
-}
-
-.settings-sections::-webkit-scrollbar-track {
-  background: rgba(65, 65, 65, 0.1);
-  border-radius: 4px;
-}
-
-.settings-sections::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 4px;
-}
-
-.settings-sections::-webkit-scrollbar-thumb:hover {
-  background: #666;
-}
-
 /* Success and error states */
 .api-key-status.success {
   color: #4CAF50;
@@ -246,225 +317,191 @@
   color: #ff6b6b;
 }
 
-/* Input validation states */
-.form-group input.valid {
-  border-color: #4CAF50;
-}
-
-.form-group input.invalid {
-  border-color: #ff6b6b;
-}
-
-/* Adjust for macOS titlebar area */
-@media screen and (min-width: 0\0) {
-  .settings-header {
-    padding-top: 30px; /* Provide space for native traffic lights on macOS */
-  }
-}
-
-/* Model selector styles */
-.model-selector {
-  position: relative;
-  width: 100%;
-}
-
-select.model-selector {
-  background-color: #3a3a3a;
-  color: #fff;
-  border: 1px solid #484848;
-  padding: 10px 12px;
-  border-radius: 4px;
-  font-size: 14px;
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 30px;
-  width: 100%;
-}
-
-.model-selector::after {
-  content: '▼';
-  font-size: 10px;
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: #888;
-}
-
-/* Free vs Paid model styling in dropdown */
-optgroup {
-  font-weight: bold;
-  color: #999;
-  padding: 5px 0;
-}
-
-option.free-model {
-  color: #a3e8a3;
-}
-
-option.paid-model {
-  color: #f3cc7d;
-}
-
-/* Add key badge */
-.key-badge {
-  display: inline-block;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-left: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.key-badge.provided {
-  background-color: rgba(74, 168, 108, 0.2);
-  color: #a3e8a3;
-  border: 1px solid rgba(74, 168, 108, 0.4);
-}
-
-.key-badge.missing {
-  background-color: rgba(168, 74, 74, 0.2);
-  color: #ff9f9f;
-  border: 1px solid rgba(168, 74, 74, 0.4);
-}
-
-.key-badge.optional {
-  background-color: rgba(168, 138, 74, 0.2);
-  color: #f3cc7d;
-  border: 1px solid rgba(168, 138, 74, 0.4);
-}
-
-/* Additional styles for new model selector UI */
-
-/* Mode and model selector container */
-.mode-selector-container {
+/* New styles for appearance tab */
+.theme-selector {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 15px;
+  margin-top: 10px;
 }
 
-/* Model selector styles */
-.model-selector {
-  position: relative;
-}
-
-#model-dropdown {
-  background-color: rgba(58, 58, 58, 0.9);
-  color: white;
-  border: 1px solid rgba(72, 72, 72, 0.8);
-  padding: 8px 15px;
-  border-radius: 4px;
+.theme-option {
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 30px;
-  outline: none;
-  width: 180px;
-  font-size: 14px;
+  text-align: center;
+  opacity: 0.7;
+  transition: all 0.2s ease;
 }
 
-.model-selector::after {
-  content: '▼';
-  font-size: 10px;
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: #888;
-}
-
-/* Styling for free vs paid models */
-option.free-model {
-  color: #a3e8a3;
-}
-
-option.paid-model {
-  color: #f3cc7d;
-}
-
-/* Model info tooltip */
-.model-info-tooltip {
-  position: absolute;
-  background-color: rgba(42, 42, 42, 0.95);
-  border: 1px solid rgba(72, 72, 72, 0.8);
-  border-radius: 6px;
-  padding: 12px;
-  width: 280px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  display: none;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  opacity: 0;
-}
-
-.model-info-tooltip.visible {
-  display: block;
+.theme-option:hover {
   opacity: 1;
 }
 
-.tooltip-header {
-  font-weight: bold;
-  font-size: 14px;
-  color: #fff;
-  margin-bottom: 5px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.theme-option.active {
+  opacity: 1;
 }
 
-.tooltip-description {
-  font-size: 13px;
-  color: #ccc;
+.theme-option.active .theme-preview {
+  border-color: #4a76a8;
+  box-shadow: 0 0 0 2px rgba(74, 118, 168, 0.4);
+}
+
+.theme-preview {
+  width: 80px;
+  height: 60px;
+  border-radius: 6px;
   margin-bottom: 8px;
+  border: 2px solid #444;
+  transition: all 0.2s ease;
+}
+
+.dark-theme {
+  background: linear-gradient(to bottom, #2a2a2a 0%, #2a2a2a 30%, #222 30%, #222 100%);
+}
+
+.light-theme {
+  background: linear-gradient(to bottom, #f0f0f0 0%, #f0f0f0 30%, #fff 30%, #fff 100%);
+}
+
+.system-theme {
+  background: linear-gradient(to right, 
+    linear-gradient(to bottom, #2a2a2a 0%, #2a2a2a 30%, #222 30%, #222 100%) 0%,
+    linear-gradient(to bottom, #f0f0f0 0%, #f0f0f0 30%, #fff 30%, #fff 100%) 100%
+  );
+  background: linear-gradient(45deg, #2a2a2a 0%, #2a2a2a 49%, #f0f0f0 51%, #f0f0f0 100%);
+}
+
+.theme-option span {
+  display: block;
+  font-size: 12px;
+  color: #ddd;
+}
+
+/* Range slider styling */
+.range-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.range-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #444;
+  outline: none;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #4a76a8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  background: #5a86b8;
+  transform: scale(1.1);
+}
+
+.range-value {
+  font-size: 14px;
+  color: #bbb;
+  width: 45px;
+  text-align: right;
+}
+
+/* New styles for advanced settings */
+.small-input {
+  width: 120px !important;
+  text-align: center;
+}
+
+.input-help {
+  display: block;
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
   line-height: 1.4;
 }
 
-.tooltip-status {
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 3px;
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.secondary-button {
+  background-color: #444;
+  color: #eee;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-button:hover {
+  background-color: #555;
+}
+
+/* New styles for About tab */
+.about-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.app-info {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.app-logo {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  background: linear-gradient(to right, #4a76a8, #8a4aa8, #4aa86c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   display: inline-block;
 }
 
-.tooltip-status.free {
-  background-color: rgba(74, 168, 108, 0.2);
-  color: #a3e8a3;
-  border: 1px solid rgba(74, 168, 108, 0.4);
+.app-version {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 15px;
 }
 
-.tooltip-status.paid {
-  background-color: rgba(138, 74, 168, 0.2);
-  color: #f3cc7d;
-  border: 1px solid rgba(138, 74, 168, 0.4);
+.app-description {
+  color: #ddd;
+  line-height: 1.5;
 }
 
-.tooltip-status.no-key {
-  background-color: rgba(168, 74, 74, 0.2);
-  color: #ff9f9f;
-  border: 1px solid rgba(168, 74, 74, 0.4);
+.email {
+  color: #4a76a8;
+  margin-top: 5px;
 }
 
-/* Model badge shown in message */
-.model-badge {
-  display: inline-block;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-left: 5px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  vertical-align: middle;
+.library-list {
+  margin-top: 15px;
 }
 
-.model-badge.free {
-  background-color: rgba(74, 168, 108, 0.3);
-  color: #a3e8a3;
+.library-item {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+  color: #bbb;
 }
 
-.model-badge.paid {
-  background-color: rgba(138, 74, 168, 0.3);
-  color: #f3cc7d;
+.library-item strong {
+  color: #ddd;
+}
+
+.library-item:last-child {
+  border-bottom: none;
 }

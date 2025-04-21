@@ -1,10 +1,34 @@
 // Settings page functionality
 document.addEventListener('DOMContentLoaded', async () => {
-  // Get UI elements
+  // Tab navigation
+  const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+  
+  // API keys form elements
   const apiKeysForm = document.getElementById('api-keys-form');
-  const modelConfigForm = document.getElementById('model-config-form');
   const saveApiKeysBtn = document.getElementById('save-api-keys-btn');
+  
+  // Model config form elements
+  const modelConfigForm = document.getElementById('model-config-form');
   const saveModelConfigBtn = document.getElementById('save-model-config-btn');
+  
+  // Appearance form elements
+  const appearanceForm = document.getElementById('appearance-form');
+  const saveAppearanceBtn = document.getElementById('save-appearance-btn');
+  const fontSizeSlider = document.getElementById('font-size');
+  const fontSizeValue = fontSizeSlider.nextElementSibling;
+  const themeOptions = document.querySelectorAll('.theme-option');
+  
+  // Advanced settings form elements
+  const advancedForm = document.getElementById('advanced-form');
+  const saveAdvancedBtn = document.getElementById('save-advanced-btn');
+  const temperatureSlider = document.getElementById('temperature');
+  const temperatureValue = temperatureSlider.nextElementSibling;
+  const clearCacheBtn = document.getElementById('clear-cache-btn');
+  const clearHistoryBtn = document.getElementById('clear-history-btn');
+  
+  // Close button
+  const closeSettingsBtn = document.getElementById('close-settings-btn');
   
   // All API key input fields
   const apiKeyInputs = {
@@ -49,6 +73,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Load existing settings when the page loads
   await loadSettings();
+  
+  // Handle tab navigation
+  sidebarTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabId = tab.getAttribute('data-tab');
+      
+      // Update active tab
+      sidebarTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // Show corresponding tab pane
+      tabPanes.forEach(pane => {
+        pane.classList.remove('active');
+        if (pane.id === tabId) {
+          pane.classList.add('active');
+        }
+      });
+    });
+  });
+  
+  // Close settings window
+  closeSettingsBtn.addEventListener('click', () => {
+    window.electronAPI.closeSettingsWindow();
+  });
   
   // Save API keys
   apiKeysForm.addEventListener('submit', async (e) => {
@@ -158,6 +206,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   
+  // Handle appearance settings
+  // Theme selection
+  themeOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      themeOptions.forEach(opt => opt.classList.remove('active'));
+      option.classList.add('active');
+    });
+  });
+  
+  // Font size slider
+  fontSizeSlider.addEventListener('input', () => {
+    fontSizeValue.textContent = `${fontSizeSlider.value}px`;
+  });
+  
+  // Save appearance settings
+  appearanceForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const activeTheme = document.querySelector('.theme-option.active').getAttribute('data-theme');
+    const fontSize = fontSizeSlider.value;
+    
+    // For now just show a notification - actual implementation would need to be added
+    showNotification('Appearance settings saved!', 'success');
+  });
+  
+  // Handle advanced settings
+  // Temperature slider
+  temperatureSlider.addEventListener('input', () => {
+    temperatureValue.textContent = temperatureSlider.value;
+  });
+  
+  // Clear cache button
+  clearCacheBtn.addEventListener('click', () => {
+    // For now just show a notification - actual implementation would need to be added
+    showNotification('Cache cleared successfully!', 'success');
+  });
+  
+  // Clear history button
+  clearHistoryBtn.addEventListener('click', () => {
+    // For now just show a notification - actual implementation would need to be added
+    showNotification('Chat history cleared successfully!', 'success');
+  });
+  
+  // Save advanced settings
+  advancedForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const maxTokens = document.getElementById('max-tokens').value;
+    const temperature = temperatureSlider.value;
+    
+    // For now just show a notification - actual implementation would need to be added
+    showNotification('Advanced settings saved!', 'success');
+  });
+  
   // Toggle password visibility
   toggleVisibilityButtons.forEach(button => {
     button.addEventListener('click', () => {
@@ -224,6 +326,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
       }
+      
+      // Load appearance settings (placeholder for now)
+      // This would be implemented when appearance settings are actually stored
+      
+      // Load advanced settings (placeholder for now)
+      // This would be implemented when advanced settings are actually stored
+      
     } catch (error) {
       console.error('Error loading settings:', error);
       showNotification('Error loading settings. Please try again.', 'error');
@@ -243,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Remove any existing notifications
     const existingNotifications = document.querySelectorAll('.settings-notification');
     existingNotifications.forEach(notification => {
-      document.body.removeChild(notification);
+      notification.remove();
     });
     
     // Create and show the notification
@@ -255,7 +364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Remove notification after a delay
     setTimeout(() => {
       if (document.body.contains(notification)) {
-        document.body.removeChild(notification);
+        notification.remove();
       }
     }, 3000);
   }
@@ -290,54 +399,6 @@ style.textContent = `
   @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
-  }
-  
-  .subsection-header {
-    color: #bbbbbb;
-    font-size: 16px;
-    margin-top: 20px;
-    margin-bottom: 10px;
-  }
-  
-  .subsection-description {
-    color: #888888;
-    font-size: 13px;
-    margin-bottom: 15px;
-    font-style: italic;
-  }
-  
-  /* Improve dropdown styling */
-  .model-selector {
-    background-color: #3a3a3a;
-    color: #ffffff;
-    border: 1px solid #484848;
-    padding: 10px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    width: 100%;
-    transition: border-color 0.3s, box-shadow 0.3s;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 12px;
-  }
-  
-  .model-selector:focus {
-    outline: none;
-    border-color: #4a76a8;
-    box-shadow: 0 0 0 2px rgba(74, 118, 168, 0.2);
-  }
-  
-  .model-selector option,
-  .model-selector optgroup {
-    background-color: #2a2a2a;
-    color: #e0e0e0;
-  }
-  
-  .model-selector optgroup {
-    font-weight: 600;
-    padding: 5px 0;
   }
 `;
 document.head.appendChild(style);

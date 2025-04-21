@@ -22,7 +22,8 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#1e1e1e',
-    frame: false, // Frameless window for custom title bar
+    frame: true,
+    titleBarStyle: 'hiddenInset', // Shows traffic lights but hides the title bar
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -60,7 +61,8 @@ function createLoginWindow() {
     width: 500,
     height: 680,
     resizable: false,
-    frame: false, // Frameless window for custom styling
+    frame: true,
+    titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -92,8 +94,9 @@ function createSettingsWindow() {
     height: 750,
     resizable: true,
     parent: mainWindow,
-    modal: true,
-    frame: false, // Frameless for consistent styling
+    modal: false,
+    frame: true,
+    titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: path.join(__dirname, 'update-settings-preload.js'),
       nodeIntegration: false,
@@ -201,6 +204,14 @@ function setupIpcHandlers() {
     } catch (error) {
       console.error('Login error:', error);
       return { error: error.message || 'Failed to log in' };
+    }
+  });
+
+  ipcMain.on('close-login-window', (event) => {
+    // Get the login window from the event sender
+    const loginWindow = BrowserWindow.fromWebContents(event.sender);
+    if (loginWindow) {
+      loginWindow.close();
     }
   });
 

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.send('window-minimize'),
   maximizeWindow: () => ipcRenderer.send('window-maximize'),
   closeWindow: () => ipcRenderer.send('window-close'),
+  closeLoginWindow: () => ipcRenderer.send('close-login-window'),
 
   // Markdown formatting
   formatMarkdown: (text) => ipcRenderer.invoke('format-markdown', text),
@@ -40,12 +41,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Model configuration
   saveModelConfig: (config) => ipcRenderer.invoke('save-model-config', config),
   getModelConfig: () => ipcRenderer.invoke('get-model-config'),
-  getModeModel: (mode) => ipcRenderer.invoke('get-mode-model', mode),
   
-  // Enhanced model functionality
-  getModelsForMode: (mode, freeOnly) => ipcRenderer.invoke('get-models-for-mode', mode, freeOnly),
-  validateApiKey: (provider, key) => ipcRenderer.invoke('validate-api-key', provider, key),
+  // New functions for appearance settings
+  saveAppearanceSettings: (settings) => ipcRenderer.invoke('save-appearance-settings', settings),
+  getAppearanceSettings: () => ipcRenderer.invoke('get-appearance-settings'),
   
-  // External link handling
-  openExternalLink: (url) => shell.openExternal(url)
+  // New functions for advanced settings
+  saveAdvancedSettings: (settings) => ipcRenderer.invoke('save-advanced-settings', settings),
+  getAdvancedSettings: () => ipcRenderer.invoke('get-advanced-settings'),
+  clearCache: () => ipcRenderer.invoke('clear-cache'),
+  clearChatHistory: () => ipcRenderer.invoke('clear-chat-history')
 });
