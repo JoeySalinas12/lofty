@@ -5,6 +5,7 @@ import sys
 import os
 import json
 import requests
+from openai import OpenAI
 from dotenv import load_dotenv
 
 # Try importing necessary libraries
@@ -282,6 +283,36 @@ def query_llm(model_id, prompt):
             
     except Exception as e:
         return f"Error querying {model_id}: {str(e)}"
+    
+def query_deepseek_model(prompt, model_id="deepseek/deepseek-r1:free", api_key=None):
+    """Query OpenAI models like GPT-4 Turbo"""
+    api_key = api_key or os.getenv("DEEPSEEK_API_KEY2")
+    if not api_key:
+        return {"error": "Deepseek API key not found. Please configure it in settings."}
+    
+    client = OpenAI(api_key=api_key, base_url="https://openrouter.ai/api/v1")
+
+    response = client.chat.completions.create(
+        model=model_id,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant"},
+            {"role": "user", "content": prompt},
+        ],
+        stream=False,
+        max_tokens=200
+    )
+
+    try:
+        return response.choices[0].message.content
+    except requests.exceptions.RequestException as e:
+        error_msg = str(e)
+        if "401" in error_msg:
+            return f"Error: Invalid OpenAI API key. Please check your settings."
+        elif "429" in error_msg:
+            return f"Error: OpenAI API rate limit exceeded. Please try again later."
+        else:
+            return f"Error querying OpenAI: {error_msg}"
+
 
 if __name__ == "__main__":
     # Check arguments
@@ -296,3 +327,4 @@ if __name__ == "__main__":
     # Query the LLM and print the result
     result = query_llm(model_id, prompt_text)
     print(result)
+
